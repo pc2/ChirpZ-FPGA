@@ -1,0 +1,8 @@
+// Arjun Ramaswami
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define FFTW_PLAN @FFTW_PLAN@
+
+#endif // CONFIG_H
