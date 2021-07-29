@@ -1,5 +1,5 @@
 # Author: Arjun Ramaswami
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(chirpz 
           VERSION 1.0
           DESCRIPTION "Non-powers-of-2 3D FFT using Chirp-Z algorithm"
