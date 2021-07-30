@@ -54,10 +54,11 @@ bool print_results(double exec_time, double gather_time, double flops, unsigned 
 void parse_args(int argc, char* argv[], CONFIG &config){
 
   try{
-    cxxopts::Options options("Chirp-Z", "Chirp-z Filter for non-powers-of-2 3D FFT");
+    cxxopts::Options options("Chirp-Z", "Chirp-Z Filter for non-powers-of-2 3D FFT");
     options.add_options()
       ("p, path", "Path to bitstream", cxxopts::value<string>())
       ("w, wisdomfile", "File to wisdom", cxxopts::value<string>()->default_value("a.out"))
+      ("r, chirp_wisdomfile", "File to Chirp wisdom", cxxopts::value<string>()->default_value("b.out"))
       ("n, num", "Size of FFT dim", cxxopts::value<unsigned>()->default_value("64"))
       ("i, iter", "Number of iterations", cxxopts::value<unsigned>()->default_value("1"))
       ("t, threads", "Number of threads", cxxopts::value<unsigned>()->default_value("1"))
@@ -89,6 +90,10 @@ void parse_args(int argc, char* argv[], CONFIG &config){
       config.wisdomfile = opt["wisdomfile"].as<string>();
     }
 
+    if(opt.count("chirp_wisdomfile")){
+      config.chirp_wisdomfile = opt["chirp_wisdomfile"].as<string>();
+    }
+
     config.num = opt["num"].as<unsigned>();
     config.threads = opt["threads"].as<unsigned>();
     config.iter = opt["iter"].as<unsigned>();
@@ -108,7 +113,8 @@ void print_config(CONFIG config){
   cout << "---------------\n";
   cout << "Bitstream    = " << config.path << endl;
   cout << "Points       = {"<< config.num << ", " << config.num << ", " << config.num << "}" << endl;
-  cout << "Wisdom Path  = " << config.wisdomfile << endl;
+  cout << "FFTW Wisdom Path  = " << config.wisdomfile << endl;
+  cout << "Chirp Wisdom Path  = " << config.chirp_wisdomfile << endl;
   switch(FFTW_PLAN){
     case FFTW_MEASURE:  cout << "FFTW Plan    = Measure\n";
                         break;

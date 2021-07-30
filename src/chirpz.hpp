@@ -9,6 +9,7 @@
 struct CONFIG{
   std::string path;
   std::string wisdomfile;
+  std::string chirp_wisdomfile;
   unsigned num; 
   unsigned iter;
   unsigned threads;
