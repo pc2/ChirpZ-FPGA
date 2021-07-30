@@ -12,11 +12,37 @@ using namespace std;
 
 static fftwf_plan plan_fftwf, plan_chirp_sig, plan_chirp_filter, plan_inv_chirp;
 
-static void cleanup_plans(){
+void cleanup_plans(){
   fftwf_destroy_plan(plan_fftwf);
   fftwf_destroy_plan(plan_chirp_sig);
   fftwf_destroy_plan(plan_chirp_filter);
   fftwf_destroy_plan(plan_inv_chirp);
+}
+
+bool create_data(fftwf_complex *fftw_verify, fftwf_complex *chirp_sig, fftwf_complex *chirp_filter, const unsigned num_pts, const unsigned chirp_num_pts){
+
+  if(fftw_verify == NULL || num_pts <= 0){
+    return false;
+  }
+
+  if(chirp_sig == NULL || chirp_num_pts <= 0){
+    return false;
+  }
+
+  for(size_t i = 0; i < num_pts; i++){
+    chirp_sig[i][0] = fftw_verify[i][0] = (float)((float)rand() / (float)RAND_MAX);
+    chirp_sig[i][1] = fftw_verify[i][1] = (float)((float)rand() / (float)RAND_MAX);
+
+    chirp_filter[i][0] = 0.0l;
+    chirp_filter[i][1] = 0.0l;
+  }
+
+  for(size_t i = num_pts; i < chirp_num_pts; i++){
+    chirp_sig[i][0] = 0.0l;
+    chirp_sig[i][1] = 0.0l;
+  }
+
+  return true;
 }
 
 const unsigned next_second_power_of_two(unsigned x) {
@@ -115,6 +141,16 @@ cpu_t chirpz_cpu(struct CONFIG& config){
     else{
       cout << "-- Exporting wisdom file to " << config.chirp_wisdomfile.c_str() << endl;
     }
+  }
+
+  bool status = create_data(fftwf_verify, chirp_sig, chirp_filter, num_pts, chirp_num_pts);
+  if(!status){
+    cerr << "Error in Data Creation" << endl;
+    fftwf_free(fftwf_verify);
+    fftwf_free(chirp_sig);
+    fftwf_free(chirp_filter);
+    timing_cpu.valid = false;
+    return timing_cpu;
   }
 
   fftwf_free(fftwf_verify);
