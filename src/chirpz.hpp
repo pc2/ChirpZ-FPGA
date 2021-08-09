@@ -28,7 +28,7 @@ typedef struct cpu_timing {
 
 cpu_t chirpz_cpu(struct CONFIG& config);
 
-const unsigned next_second_power_of_two(unsigned x);
+cpu_t chirpz_cpu_1d(struct CONFIG& config);
 
 bool create_data(fftwf_complex *fftw_verify, fftwf_complex *chirp_sig, fftwf_complex *chirp_filter, const unsigned num_pts, const unsigned chirp_num_pts);
 

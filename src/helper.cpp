@@ -160,3 +160,13 @@ void disp_results(CONFIG config, cpu_t timing_cpu){
   cout << "----" << endl;
   cout << "Chirp-Z Runtime   : "<< timing_cpu.chirpz_t << "ms" << endl;
 }
+
+unsigned next_second_power_of_two(unsigned x) {
+  x = x - 1; 
+  x = x | (x >> 1); 
+  x = x | (x >> 2); 
+  x = x | (x >> 4); 
+  x = x | (x >> 8); 
+  x = (x + 1) << 1;
+  return x;
+} 

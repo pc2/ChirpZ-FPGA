@@ -14,4 +14,6 @@ void disp_results(CONFIG config, cpu_t cpu_timing);
 
 double getTimeinMilliSec();
 
+unsigned next_second_power_of_two(unsigned x);
+
 #endif // HELPER_HPP
