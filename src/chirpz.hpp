@@ -8,10 +8,16 @@
 
 #include <fftw3.h>
 
+typedef struct {
+  float x; /**< real value */
+  float y; /**< imaginary value */
+} float2;
+
 struct CONFIG{
   std::string path;
   std::string wisdomfile;
   std::string chirp_wisdomfile;
+  unsigned dim; 
   unsigned num; 
   unsigned iter;
   unsigned threads;
@@ -28,10 +34,8 @@ typedef struct cpu_timing {
 
 cpu_t chirpz_cpu(struct CONFIG& config);
 
-cpu_t chirpz_cpu_1d(struct CONFIG& config);
+cpu_t chirpz_cpu_1d(float2 *inp, float2 *out, const struct CONFIG& config);
 
-bool create_data(fftwf_complex *fftw_verify, fftwf_complex *chirp_sig, fftwf_complex *chirp_filter, const unsigned num_pts, const unsigned chirp_num_pts);
-
-//bool fft_conv3D_cpu_verify(struct CONFIG& config, const float2 *sig, const float2 *filter, float2 *out);
+bool verify_chirp_1d(float2 *inp, float2 *out, const unsigned num);
 
 #endif 

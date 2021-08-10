@@ -13,22 +13,37 @@ int main(int argc, char* argv[]){
   parse_args(argc, argv, chirpz_config);
   print_config(chirpz_config);
 
+  float2 *inp = new float2[chirpz_config.num]();
+  float2 *out = new float2[chirpz_config.num]();
+
+  create_data_1d(inp, chirpz_config.num);
+
   if(chirpz_config.cpuonly){
-#ifdef USE_FFTW
     cpu_t cpu_timing = {0.0, false};
-    cpu_timing = chirpz_cpu_1d(chirpz_config);
+
+    if(chirpz_config.dim == 1){
+      cpu_timing = chirpz_cpu_1d(inp, out, chirpz_config);
+    }
     if(cpu_timing.valid == false){
       cout << "Error in CPU Chirp-z Implementation\n";
       return EXIT_FAILURE;
     }
-    cout << "FFT successful" << endl;
+    cout << "-- FFT successful" << endl;
+
+    bool status = verify_chirp_1d(inp, out, chirpz_config.num);
+    if(!status){
+      cout << "FFTW and Implementation not the same!" << endl;
+    }
+    else{
+      cout << "-- Verified with FFTW\n";
+    }
+
     disp_results(chirpz_config, cpu_timing); 
     return EXIT_SUCCESS;
-#else
-    cerr << "FFTW not found" << endl;
-    return EXIT_FAILURE;
-#endif
   }
+
+  free(inp);
+  free(out);
 
   return EXIT_SUCCESS;
 }

@@ -1,4 +1,3 @@
-// Author: Arjun Ramaswami
 #ifndef HELPER_HPP
 #define HELPER_HPP
 
@@ -15,5 +14,7 @@ void disp_results(CONFIG config, cpu_t cpu_timing);
 double getTimeinMilliSec();
 
 unsigned next_second_power_of_two(unsigned x);
+
+void create_data_1d(float2 *inp, unsigned num);
 
 #endif // HELPER_HPP

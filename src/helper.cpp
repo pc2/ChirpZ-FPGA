@@ -9,6 +9,23 @@
 using namespace std;
 
 /**
+ * \brief  create random single precision complex floating point values  
+ * \param  inp : pointer to float2 data of size N 
+ * \param  num   : number of points in the array
+ * \return true if successful
+ */
+void create_data_1d(float2 *inp, unsigned num){
+  if(inp == NULL || num <= 0){ throw "Bad args in create data function";}
+
+  for(size_t i = 0; i < num; i++){
+    inp[i].x = (float)i;
+    inp[i].y = 0.0f;
+    //inp[i].x = (float)((float)rand() / (float)RAND_MAX);
+    //inp[i].y = (float)((float)rand() / (float)RAND_MAX);
+  }
+}
+
+/**
  * \brief  compute walltime in milliseconds
  * \retval time in milliseconds
  */
@@ -59,6 +76,7 @@ void parse_args(int argc, char* argv[], CONFIG &config){
       ("p, path", "Path to bitstream", cxxopts::value<string>())
       ("w, wisdomfile", "File to wisdom", cxxopts::value<string>()->default_value("a.out"))
       ("r, chirp_wisdomfile", "File to Chirp wisdom", cxxopts::value<string>()->default_value("b.out"))
+      ("d, dim", "Number of FFT dim", cxxopts::value<unsigned>()->default_value("3"))
       ("n, num", "Size of FFT dim", cxxopts::value<unsigned>()->default_value("64"))
       ("i, iter", "Number of iterations", cxxopts::value<unsigned>()->default_value("1"))
       ("t, threads", "Number of threads", cxxopts::value<unsigned>()->default_value("1"))
@@ -94,6 +112,7 @@ void parse_args(int argc, char* argv[], CONFIG &config){
       config.chirp_wisdomfile = opt["chirp_wisdomfile"].as<string>();
     }
 
+    config.dim = opt["dim"].as<unsigned>();
     config.num = opt["num"].as<unsigned>();
     config.threads = opt["threads"].as<unsigned>();
     config.iter = opt["iter"].as<unsigned>();
