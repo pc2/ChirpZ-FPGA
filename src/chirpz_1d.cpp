@@ -33,18 +33,18 @@ static void modulate_1d(fftwf_complex *chirp_sig, fftwf_complex *chirp_filter, c
 
   for(size_t i = 0; i < num; i++){
     float x = cos(M_PI * i * i / num);
-    float y = sin(M_PI * i * i / num);
+    float y = -1 * sin(M_PI * i * i / num);
     float a = chirp_sig[i][0]; 
     float b = chirp_sig[i][1]; 
 
-    chirp_sig[i][0] = (x * b) + (y * a);
-    chirp_sig[i][1] = (x * a) - (y * b);
+    chirp_sig[i][0] = (x * a) - (y * b);
+    chirp_sig[i][1] = (x * b) + (y * a);
 
     chirp_filter[i][0] = x;
-    chirp_filter[i][1] = y;
+    chirp_filter[i][1] = -1 * y;
 
     chirp_filter[chirp_num -i][0] = x;
-    chirp_filter[chirp_num -i][1] = y;
+    chirp_filter[chirp_num -i][1] = -1 * y;
   }
 }
 
@@ -64,12 +64,12 @@ static void demodulate_1d(fftwf_complex *chirp_sig, const unsigned num, const un
 
   for(size_t i = 0; i < num; i++){
     float x = cos(M_PI * i * i / num);
-    float y = sin(M_PI * i * i / num);
+    float y = -1 * sin(M_PI * i * i / num);
     float a = chirp_sig[i][0];
     float b = chirp_sig[i][1];
 
-    chirp_sig[i][1] = -1 * ((x * a) + (y * b)) / (chirp_num);
-    chirp_sig[i][0] = ((x * b) - (y * a)) / (chirp_num);
+    chirp_sig[i][0] = ((x * a) - (y * b));
+    chirp_sig[i][1] = ((x * b) + (y * a));
   }
 }
 
@@ -142,10 +142,16 @@ cpu_t chirpz_cpu_1d(float2 *inp, float2 *out, const struct CONFIG& config){
   cout << "-- Executing Convolution" << endl;
   fftwf_execute(plan_chirp_filter);
   fftwf_execute(plan_chirp_sig);
+
   point_mult_1d(chirp_sig, chirp_filter, chirp_num);
 
   fftwf_execute(plan_inv_chirp);
-
+  
+  for(unsigned i = 0; i < chirp_num; i++){
+    chirp_sig[i][0] = chirp_sig[i][0] / chirp_num;
+    chirp_sig[i][1] = chirp_sig[i][1] / chirp_num;
+  }
+  
   cout << "-- Demodulating Result" << endl;
   demodulate_1d(chirp_sig, num, chirp_num);
 

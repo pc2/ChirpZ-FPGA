@@ -15,6 +15,7 @@ double getTimeinMilliSec();
 
 unsigned next_second_power_of_two(unsigned x);
 
+void create_data(float2 *inp, unsigned num);
 void create_data_1d(float2 *inp, unsigned num);
 
 #endif // HELPER_HPP

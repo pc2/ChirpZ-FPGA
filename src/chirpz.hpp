@@ -35,7 +35,9 @@ typedef struct cpu_timing {
 cpu_t chirpz_cpu(struct CONFIG& config);
 
 cpu_t chirpz_cpu_1d(float2 *inp, float2 *out, const struct CONFIG& config);
-
 bool verify_chirp_1d(float2 *inp, float2 *out, const unsigned num);
+
+cpu_t chirpz_cpu_2d(float2 *inp, float2 *out, const struct CONFIG& config);
+bool verify_chirp_2d(float2 *inp, float2 *out, const unsigned num);
 
 #endif 

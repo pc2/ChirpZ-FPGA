@@ -18,12 +18,30 @@ void create_data_1d(float2 *inp, unsigned num){
   if(inp == NULL || num <= 0){ throw "Bad args in create data function";}
 
   for(size_t i = 0; i < num; i++){
-    inp[i].x = (float)i;
-    inp[i].y = 0.0f;
-    //inp[i].x = (float)((float)rand() / (float)RAND_MAX);
-    //inp[i].y = (float)((float)rand() / (float)RAND_MAX);
+    //inp[i].x = (float)1;
+    //inp[i].y = 0.0f;
+    inp[i].x = (float)((float)rand() / (float)RAND_MAX);
+    inp[i].y = (float)((float)rand() / (float)RAND_MAX);
   }
 }
+
+/**
+ * \brief  create random single precision complex floating point values  
+ * \param  inp : pointer to float2 data of size N 
+ * \param  num   : number of points in the array
+ * \return true if successful
+ */
+void create_data(float2 *inp, unsigned num){
+  if(inp == NULL || num <= 0){ throw "Bad args in create data function";}
+
+  for(size_t i = 0; i < num*num; i++){
+    //inp[i].x = (float)(i);
+    //inp[i].y = (float)(i);
+    inp[i].x = (float)((float)rand() / (float)RAND_MAX);
+    inp[i].y = (float)((float)rand() / (float)RAND_MAX);
+  }
+}
+
 
 /**
  * \brief  compute walltime in milliseconds
