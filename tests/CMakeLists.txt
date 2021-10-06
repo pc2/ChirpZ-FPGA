@@ -2,7 +2,12 @@ project(chirpz-gtest)
 
 add_executable(test_chirpz 
   test_chirpz.cpp 
-  ${CMAKE_SOURCE_DIR}/src/chirpz.cpp ${CMAKE_SOURCE_DIR}/src/helper.cpp
+  test_chirpz2d_cpu.cpp 
+  test_chirpz3d_cpu.cpp 
+  ${CMAKE_SOURCE_DIR}/src/chirpz1d.cpp 
+  ${CMAKE_SOURCE_DIR}/src/chirpz2d.cpp 
+  ${CMAKE_SOURCE_DIR}/src/chirpz3d.cpp 
+  ${CMAKE_SOURCE_DIR}/src/helper.cpp
 )
 
 target_include_directories(test_chirpz 

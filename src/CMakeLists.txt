@@ -13,9 +13,9 @@ configure_file(
 
 add_executable(chirpz
   ${PROJECT_SOURCE_DIR}/main.cpp
-  ${PROJECT_SOURCE_DIR}/chirpz.cpp
-  ${PROJECT_SOURCE_DIR}/chirpz_1d.cpp
-  ${PROJECT_SOURCE_DIR}/chirpz_2d.cpp
+  ${PROJECT_SOURCE_DIR}/chirpz1d.cpp
+  ${PROJECT_SOURCE_DIR}/chirpz2d.cpp
+  ${PROJECT_SOURCE_DIR}/chirpz3d.cpp
   ${PROJECT_SOURCE_DIR}/helper.cpp
 )
 

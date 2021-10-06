@@ -27,17 +27,17 @@ struct CONFIG{
   bool usesvm;
 };
 
-typedef struct cpu_timing {
-  double chirpz_t;      /**< Time for ChirpZ FFT */ 
-  bool valid;           /**< True if valid execution */
-} cpu_t;
+void transpose2d(float2 *temp, const unsigned num);
+void transpose3d(float2 *temp, const unsigned num);
+void transpose3d_rev(float2 *temp, const unsigned num);
 
-cpu_t chirpz_cpu(struct CONFIG& config);
+void chirpz1d_cpu(float2 *inp, float2 *out, const unsigned num);
+bool verify_chirp1d(float2 *inp, float2 *out, const unsigned num);
 
-cpu_t chirpz_cpu_1d(float2 *inp, float2 *out, const struct CONFIG& config);
-bool verify_chirp_1d(float2 *inp, float2 *out, const unsigned num);
+void chirpz2d_cpu(float2 *inp, float2 *out, const unsigned num);
+bool verify_chirp2d(float2 *inp, float2 *out, const unsigned num);
 
-cpu_t chirpz_cpu_2d(float2 *inp, float2 *out, const struct CONFIG& config);
-bool verify_chirp_2d(float2 *inp, float2 *out, const unsigned num);
+void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num);
+bool verify_chirp3d(float2 *inp, float2 *out, const unsigned num);
 
 #endif 

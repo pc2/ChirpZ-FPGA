@@ -14,34 +14,14 @@ using namespace std;
  * \param  num   : number of points in the array
  * \return true if successful
  */
-void create_data_1d(float2 *inp, unsigned num){
+void create_data(float2 *inp, const unsigned num){
   if(inp == NULL || num <= 0){ throw "Bad args in create data function";}
 
   for(size_t i = 0; i < num; i++){
-    //inp[i].x = (float)1;
-    //inp[i].y = 0.0f;
     inp[i].x = (float)((float)rand() / (float)RAND_MAX);
     inp[i].y = (float)((float)rand() / (float)RAND_MAX);
   }
 }
-
-/**
- * \brief  create random single precision complex floating point values  
- * \param  inp : pointer to float2 data of size N 
- * \param  num   : number of points in the array
- * \return true if successful
- */
-void create_data(float2 *inp, unsigned num){
-  if(inp == NULL || num <= 0){ throw "Bad args in create data function";}
-
-  for(size_t i = 0; i < num*num; i++){
-    //inp[i].x = (float)(i);
-    //inp[i].y = (float)(i);
-    inp[i].x = (float)((float)rand() / (float)RAND_MAX);
-    inp[i].y = (float)((float)rand() / (float)RAND_MAX);
-  }
-}
-
 
 /**
  * \brief  compute walltime in milliseconds
@@ -91,16 +71,13 @@ void parse_args(int argc, char* argv[], CONFIG &config){
   try{
     cxxopts::Options options("Chirp-Z", "Chirp-Z Filter for non-powers-of-2 3D FFT");
     options.add_options()
-      ("p, path", "Path to bitstream", cxxopts::value<string>())
-      ("w, wisdomfile", "File to wisdom", cxxopts::value<string>()->default_value("a.out"))
-      ("r, chirp_wisdomfile", "File to Chirp wisdom", cxxopts::value<string>()->default_value("b.out"))
+      ("n, num", "Size of FFT dim", cxxopts::value<unsigned>()->default_value("31"))
       ("d, dim", "Number of FFT dim", cxxopts::value<unsigned>()->default_value("3"))
-      ("n, num", "Size of FFT dim", cxxopts::value<unsigned>()->default_value("64"))
+      ("p, path", "Path to bitstream", cxxopts::value<string>())
+      ("c, cpu-only", "CPU FFTW Only", cxxopts::value<bool>()->default_value("false") )
       ("i, iter", "Number of iterations", cxxopts::value<unsigned>()->default_value("1"))
-      ("t, threads", "Number of threads", cxxopts::value<unsigned>()->default_value("1"))
       ("y, noverify", "No verification", cxxopts::value<bool>()->default_value("false") )
       ("b, batch", "Num of even batches", cxxopts::value<unsigned>()->default_value("1") )
-      ("c, cpu-only", "CPU FFTW Only", cxxopts::value<bool>()->default_value("false") )
       ("s, usesvm", "SVM enabled", cxxopts::value<bool>()->default_value("false") )
       ("h,help", "Print usage")
     ;
@@ -122,17 +99,8 @@ void parse_args(int argc, char* argv[], CONFIG &config){
         exit(1);
       }
     }
-    if(opt.count("wisdomfile")){
-      config.wisdomfile = opt["wisdomfile"].as<string>();
-    }
-
-    if(opt.count("chirp_wisdomfile")){
-      config.chirp_wisdomfile = opt["chirp_wisdomfile"].as<string>();
-    }
-
     config.dim = opt["dim"].as<unsigned>();
     config.num = opt["num"].as<unsigned>();
-    config.threads = opt["threads"].as<unsigned>();
     config.iter = opt["iter"].as<unsigned>();
     config.batch = opt["batch"].as<unsigned>();
     config.noverify = opt["noverify"].as<bool>();
@@ -148,54 +116,12 @@ void print_config(CONFIG config){
   cout << endl;
   cout << "CONFIGURATION: \n";
   cout << "---------------\n";
-  cout << "Bitstream    = " << config.path << endl;
-  cout << "Points       = {"<< config.num << ", " << config.num << ", " << config.num << "}" << endl;
-  cout << "FFTW Wisdom Path  = " << config.wisdomfile << endl;
-  cout << "Chirp Wisdom Path  = " << config.chirp_wisdomfile << endl;
-  switch(FFTW_PLAN){
-    case FFTW_MEASURE:  cout << "FFTW Plan    = Measure\n";
-                        break;
-    case FFTW_ESTIMATE: cout << "FFTW Plan    = Estimate\n";
-                        break;
-    case FFTW_PATIENT:  cout << "FFTW Plan    = Patient\n";
-                        break;
-    case FFTW_EXHAUSTIVE: cout << "FFTW Plan   = Exhaustive\n";
-                        break;
-    default: throw "-- Incorrect plan set\n";
-            break;
-  }
-
-  cout << "Threads      = "<< config.threads << endl;
-  cout << "Iterations   = "<< config.iter << endl;
-  cout << "Batch        = "<< config.batch << endl;
-  cout << "----------------\n\n";
-}
-
-/**
- * \brief  compute walltime in milliseconds
- * \return time in milliseconds
- */
-double getTimeinMilliseconds(){
-   struct timespec a;
-   if(clock_gettime(CLOCK_MONOTONIC, &a) != 0){
-     fprintf(stderr, "Error in getting wall clock time \n");
-     exit(EXIT_FAILURE);
-   }
-   return (double)(a.tv_nsec) * 1.0e-6 + (double)(a.tv_sec) * 1.0E3;
-}
-
-void disp_results(CONFIG config, cpu_t timing_cpu){
-
-  cout << endl << endl;
-  cout << "MEASUREMENTS \n";
-  cout << "--------------\n";
-  cout << "Points           : " << config.num << "^3\n";
-  cout << "Threads          : " << config.threads << endl;
-  cout << "Iterations       : " << config.iter << endl << endl;
-
-  cout << "CPU:" << endl;
-  cout << "----" << endl;
-  cout << "Chirp-Z Runtime   : "<< timing_cpu.chirpz_t << "ms" << endl;
+  printf("Type        : Complex to Complex\n");
+  printf("Points      : %d%s \n", config.num, config.dim == 1 ? "" : config.dim == 2 ? "^2" : "^3");
+  cout <<"Bitstream   : " << config.path << endl;
+  cout <<"Iterations  : "<< config.iter << endl;
+  cout <<"Batch       : "<< config.batch << endl;
+  cout <<"----------------\n\n";
 }
 
 unsigned next_second_power_of_two(unsigned x) {

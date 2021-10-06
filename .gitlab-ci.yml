@@ -1,0 +1,44 @@
+stages:
+  - build
+  - run_1dchirp
+  - run_2dchirp
+  - run_3dchirp
+  - test
+
+build:
+  stage: build
+  script:
+    - rm -rf build
+    - mkdir -p build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Release ..
+    - make
+  artifacts:
+    paths:
+      - build/bin/chirpz
+      - build/bin/test_chirpz
+
+run_1dchirp:
+  stage: run_1dchirp
+  script:
+    - cd build/bin
+    - ./chirpz --cpu-only -n 31 -d 1
+
+run_2dchirp:
+  stage: run_2dchirp
+  script:
+    - cd build/bin
+    - ./chirpz --cpu-only -n 12 -d 2
+
+run_3dchirp:
+  stage: run_3dchirp
+  script:
+    - cd build/bin
+    - ./chirpz --cpu-only -n 3 -d 3
+
+test:
+  stage: test
+  script:
+    - cd build/bin/
+    - ./test_chirpz
+  dependencies:
+    - build

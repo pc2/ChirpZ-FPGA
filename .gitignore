@@ -2,8 +2,8 @@ build*/
 debug*/
 bin/
 vscode/
-scripts/
 wisdom/
+.ipynb_checkpoints
 
 tags
 *.DS_Store
