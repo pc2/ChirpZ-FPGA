@@ -2,10 +2,11 @@
 #include <iostream>
 #include <iomanip>
 #include <fftw3.h>
+#include <math.h>
 #include "cxxopts.hpp"
 #include "helper.hpp"
 #include "config.h"
-
+#include "chirpz.hpp"
 using namespace std;
 
 /**
@@ -34,36 +35,59 @@ double getTimeinMilliSec(){
 }
 
 /**
- * \brief  print time taken for 3d fft execution and data transfer
- * \param  exec_time    : average time in seconds to execute a parallel 3d FFT
- * \param  gather_time  : average time in seconds to gather results to the master node after transformation
- * \param  flops        : fftw_flops 
- * \param  N1, N2, N3   : fft size
- * \param  nprocs       : number of processes used
- * \param  nthreads     : number of threads used
- * \param  iter         : number of iterations
- * \return true if successful, false otherwise
+ * \brief print time taken for fpga and fftw runs
+ * \param config: custom structure of variables storing config values 
+ * \param runtime: iteration number of fpga timing measurements
+ * \param total_api_time: time taken to call iter times the host code
  */
-bool print_results(double exec_time, double gather_time, double flops, unsigned N, unsigned nprocs, unsigned nthreads, unsigned iter, unsigned how_many){
+void perf_measures(const CONFIG config, fpga_t *runtime){
 
-  if(exec_time == 0.0)
-    throw "Error in Run\n";
-  
-  double avg_exec = exec_time / iter;
+  fpga_t avg_runtime = {0.0, 0.0, 0.0, 0.0, 0.0, 0};
+  for(unsigned i = 0; i < config.iter; i++){
+    avg_runtime.exec_t += runtime[i].exec_t;
+    avg_runtime.pcie_read_t += runtime[i].pcie_read_t;
+    avg_runtime.pcie_write_t += runtime[i].pcie_write_t;
+  }
+  avg_runtime.exec_t = avg_runtime.exec_t / config.iter;
+  avg_runtime.pcie_read_t = avg_runtime.pcie_read_t / config.iter;
+  avg_runtime.pcie_write_t = avg_runtime.pcie_write_t / config.iter;
 
-  cout << "\nMeasurements\n" << "--------------------------\n";
-  cout << "Processes           : " << nprocs << endl;
-  cout << "Threads             : " << nthreads << endl;
-  cout << "FFT Size            : " << N << "^3\n";
-  cout << "Batch               : " << how_many << endl;
-  cout << "Iterations          : " << iter << endl;
-  cout << "Avg Tot Runtime     : " << setprecision(4) << avg_exec << " ms\n";
-  cout << "Runtime per batch   : " << (avg_exec / how_many) << " ms\n";
-  cout << "Throughput          : " << (flops * 1e-9) << " GFLOPs\n";
-  cout << "Time to Transfer    : " << gather_time << "ms\n";
-  cout << "--------------------------\n";
+  fpga_t variance = {0.0, 0.0, 0.0, 0.0, 0.0, 0};
+  fpga_t sd = {0.0, 0.0, 0.0, 0.0, 0.0, 0};
+  for(unsigned i = 0; i < config.iter; i++){
+    variance.exec_t += pow(runtime[i].exec_t - avg_runtime.exec_t, 2);
+    variance.pcie_read_t += pow(runtime[i].pcie_read_t - avg_runtime.pcie_read_t, 2);
+    variance.pcie_write_t += pow(runtime[i].pcie_write_t - avg_runtime.pcie_write_t, 2);
+  }
+  sd.exec_t = sqrt(variance.exec_t / config.iter);
+  sd.pcie_read_t = sqrt(variance.pcie_read_t / config.iter);
+  sd.pcie_write_t = sqrt(variance.pcie_write_t / config.iter);
 
-  return true;
+  double avg_total_runtime = avg_runtime.exec_t + avg_runtime.pcie_write_t + avg_runtime.pcie_read_t;
+
+  double gpoints_per_sec = (config.batch * pow(config.num, config.dim)) / (avg_runtime.exec_t * 1e-3 * 1024 * 1024);
+
+  double gBytes_per_sec = gpoints_per_sec * 8; // bytes
+
+  double gflops = config.batch * config.dim * 5 * pow(config.num, config.dim) * (log((double)config.num)/log((double)2))/(avg_runtime.exec_t * 1e-3 * 1024*1024*1024); 
+
+  printf("\n\n------------------------------------------\n");
+  printf("Measurements \n");
+  printf("--------------------------------------------\n");
+  printf("%s", config.iter>1 ? "Average Measurements of iterations\n":"");
+  printf("PCIe Write          = %.4lfms\n", avg_runtime.pcie_write_t);
+  printf("Kernel Execution    = %.4lfms\n", avg_runtime.exec_t);
+  printf("Kernel Exec/Batch   = %.4lfms\n", avg_runtime.exec_t / config.batch);
+  printf("PCIe Read           = %.4lfms\n", avg_runtime.pcie_read_t);
+  printf("Total               = %.4lfms\n", avg_total_runtime);
+  printf("Throughput          = %.4lfGFLOPS/s | %.4lf GB/s\n", gflops, gBytes_per_sec);
+  if(config.iter > 1){
+    printf("\n");
+    printf("%s", config.iter>1 ? "Deviation of runtimes among iterations\n":"");
+    printf("PCIe Write          = %.4lfms\n", sd.pcie_write_t);
+    printf("Kernel Execution    = %.4lfms\n", sd.exec_t);
+    printf("PCIe Read           = %.4lfms\n", sd.pcie_read_t);
+  }
 }
 
 void parse_args(int argc, char* argv[], CONFIG &config){
@@ -78,7 +102,9 @@ void parse_args(int argc, char* argv[], CONFIG &config){
       ("i, iter", "Number of iterations", cxxopts::value<unsigned>()->default_value("1"))
       ("y, noverify", "No verification", cxxopts::value<bool>()->default_value("false") )
       ("b, batch", "Num of even batches", cxxopts::value<unsigned>()->default_value("1") )
-      ("s, usesvm", "SVM enabled", cxxopts::value<bool>()->default_value("false") )
+      ("s, use_svm", "SVM enabled", cxxopts::value<bool>()->default_value("false") )
+      ("e, emulate", "toggle emulation", cxxopts::value<bool>()->default_value("false") )
+      ("k, back", "Toggle Backward FFT", cxxopts::value<bool>()->default_value("false") )
       ("h,help", "Print usage")
     ;
     auto opt = options.parse(argc, argv);
@@ -90,37 +116,46 @@ void parse_args(int argc, char* argv[], CONFIG &config){
     }
 
     config.cpuonly = opt["cpu-only"].as<bool>();
+    if( (opt.count("path") && config.cpuonly) || (opt.count("path") && config.emulate))
+      throw "\tRun either cpu or emulation fpga";
+    
     if(!config.cpuonly){
-      if(opt.count("path")){
+      if(opt.count("path"))
         config.path = opt["path"].as<string>();
-      }
-      else{
-        cout << "\tPlease input path to bitstream" << endl;
-        exit(1);
-      }
+      else
+        throw "\tPlease input path to bitstream\n";
     }
+
     config.dim = opt["dim"].as<unsigned>();
     config.num = opt["num"].as<unsigned>();
     config.iter = opt["iter"].as<unsigned>();
     config.batch = opt["batch"].as<unsigned>();
+    config.inv = opt["back"].as<bool>();
+
+    if(config.cpuonly && config.batch > 1){
+      throw "Batched CPU ChirpZ not implemented, only FPGA\n";
+    }
     config.noverify = opt["noverify"].as<bool>();
-    config.usesvm = opt["usesvm"].as<bool>();
+    config.use_svm = opt["use_svm"].as<bool>();
+    config.emulate = opt["emulate"].as<bool>();
   }
-  catch(const cxxopts::OptionException& e){
-    cerr << "Error parsing options: " << e.what() << endl;
+  catch(const char* msg){
+    cerr << msg << endl;
     exit(1);
   }
 }
 
-void print_config(CONFIG config){
+void print_config(CONFIG config, const char* platform_name){
   cout << endl;
   cout << "CONFIGURATION: \n";
   cout << "---------------\n";
-  printf("Type        : Complex to Complex\n");
+  printf("Type        : Complex to Complex %s Transform\n", config.inv == false ? "" : "Backward");
   printf("Points      : %d%s \n", config.num, config.dim == 1 ? "" : config.dim == 2 ? "^2" : "^3");
   cout <<"Bitstream   : " << config.path << endl;
   cout <<"Iterations  : "<< config.iter << endl;
   cout <<"Batch       : "<< config.batch << endl;
+  printf("Emulation   : %s\n", config.emulate == 1 ? "Yes": "No");
+  printf("Platform    : %s\n", platform_name);
   cout <<"----------------\n\n";
 }
 

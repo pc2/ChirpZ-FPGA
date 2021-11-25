@@ -3,8 +3,8 @@
 #include <omp.h>
 #include <fftw3.h>
 #include <math.h>
+#include <vector>
 #include <assert.h> 
-
 #include "chirpz.hpp"
 #include "helper.hpp"
 #include "config.h"
@@ -46,10 +46,10 @@ static void modulate_1d(float2 *W, fftwf_complex *chirp_sig, fftwf_complex *chir
     chirp_sig[i][1] = (x * b) + (y * a);
 
     chirp_filter[i][0] = x;
-    chirp_filter[i][1] = -1 * y;
+    chirp_filter[i][1] = -1.0f * y;
 
     chirp_filter[chirp_num -i][0] = x;
-    chirp_filter[chirp_num -i][1] = -1 * y;
+    chirp_filter[chirp_num -i][1] = -1.0f * y;
   }
 }
 
@@ -79,7 +79,7 @@ static void demodulate_1d(float2 *W, fftwf_complex *chirp_sig, const unsigned nu
 }
 
 // Chirp Z implementation
-void chirpz1d_cpu(float2 *inp, float2 *out, const unsigned num){
+void chirpz1d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inverse){
 
   const unsigned chirp_num = next_second_power_of_two(num);
 
@@ -93,10 +93,14 @@ void chirpz1d_cpu(float2 *inp, float2 *out, const unsigned num){
   
   copy_data_1d(inp, chirp_sig, chirp_filter, num, chirp_num);
 
+  float sign = -1.0f;
+  if(inverse)
+    sign = 1.0f;
+
   float2 *W = new float2[num];
-  for(size_t i = 0; i < num; i++){
-    W[i].x = cos(M_PI * i * i / num);
-    W[i].y = -1 * sin(M_PI * i * i / num);
+  for(unsigned i = 0; i < num; i++){
+    W[i].x = cos(M_PIf32 * i * i / num);
+    W[i].y = sign * sin(M_PIf32 * i * i / num);
   }
 
   modulate_1d(W, chirp_sig, chirp_filter, num, chirp_num);
@@ -128,13 +132,29 @@ void chirpz1d_cpu(float2 *inp, float2 *out, const unsigned num){
   fftwf_destroy_plan(plan_inv_chirp);
 }
 
-bool verify_chirp1d(float2 *inp, float2 *out, const unsigned num){
+bool verify_chirp1d(vector<float2> inp, vector<float2> out, const unsigned num, const unsigned batch, const bool inverse){
 
-  fftwf_complex *fftwf_verify = fftwf_alloc_complex(num);
+  const unsigned total_sz = batch * num;
 
-  fftwf_plan plan_fftwf = fftwf_plan_dft_1d(num, fftwf_verify, fftwf_verify, FFTW_FORWARD, FFTW_MEASURE);
+  int *n = (int*)calloc(1 , sizeof(int));
+  for(unsigned i = 0; i < 1; i++){
+    n[i] = num;
+  }
+  int idist = num, odist = num;
+  int istride = 1, ostride = 1; // contiguous in memory
 
-  for(unsigned i = 0; i < num; i++){
+  fftwf_complex *fftwf_verify = fftwf_alloc_complex(total_sz);
+
+  fftwf_plan plan_fftwf;
+  if(inverse){
+    printf("\tInverse transform\n");
+    plan_fftwf = fftwf_plan_many_dft(1, n, batch, &fftwf_verify[0], NULL, istride, idist, &fftwf_verify[0], NULL, ostride, odist, FFTW_BACKWARD, FFTW_ESTIMATE);
+  }
+  else{
+    plan_fftwf = fftwf_plan_many_dft(1, n, batch, &fftwf_verify[0], NULL, istride, idist, &fftwf_verify[0], NULL, ostride, odist, FFTW_FORWARD, FFTW_ESTIMATE);
+  }
+
+  for(unsigned i = 0; i < total_sz; i++){
     fftwf_verify[i][0] = inp[i].x;
     fftwf_verify[i][1] = inp[i].y;
   }
@@ -143,7 +163,7 @@ bool verify_chirp1d(float2 *inp, float2 *out, const unsigned num){
 
   cout << endl;
   float magnitude = 0.0, noise = 0.0, mag_sum = 0.0, noise_sum = 0.0;
-  for(size_t i = 0; i < num; i++) {
+  for(unsigned i = 0; i < total_sz; i++) {
     magnitude = fftwf_verify[i][0] * fftwf_verify[i][0] + \
                       fftwf_verify[i][1] * fftwf_verify[i][1];
     noise = (fftwf_verify[i][0] - out[i].x) \
@@ -156,7 +176,7 @@ bool verify_chirp1d(float2 *inp, float2 *out, const unsigned num){
 
 #ifndef NDEBUG
   cout << endl;
-  for(unsigned i = 0; i < num; i++){
+  for(unsigned i = 0; i < total_sz; i++){
     printf("%d: Impl: (%f, %f), FFTW: (%f, %f)\n", i, out[i].x, out[i].y, fftwf_verify[i][0], fftwf_verify[i][1]);
   }
   cout << endl << endl;
@@ -167,11 +187,13 @@ bool verify_chirp1d(float2 *inp, float2 *out, const unsigned num){
 
   // Calculate SNR
   float db = 10 * log(mag_sum / noise_sum) / log(10.0);
-  if(db > 120){
-    return true;
-  }
-  else{
+
+  printf("-- SNR achieved: %f db\n\n", db);
+  bool status = false;
+  if(db > 90) // reducing SNR from 120 to 90
+    status = true;
+  else
     printf("\tSignal to noise ratio on output sample: %f --> %s\n\n", db, "FAILED");
-    return false;
-  }
+
+  return status;
 }

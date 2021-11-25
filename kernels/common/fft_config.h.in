@@ -1,0 +1,23 @@
+// Arjun Ramaswami
+
+#ifndef FFT_CONFIG_H
+#define FFT_CONFIG_H
+
+#define LOGPOINTS @LOG_POINTS@
+#define POINTS @POINTS@
+
+#define LOGN @LOG_FFT_SIZE@
+#define N @FFT_SIZE@ 
+
+#define DEPTH @DEPTH@
+
+#define DDR_BUFFER_LOCATION "@DDR_BUFFER_LOCATION@"
+#define SVM_HOST_BUFFER_LOCATION "@SVM_HOST_BUFFER_LOCATION@"
+
+// CZT Variables
+#define NEAREST_POW_OF_2 @NEAREST_POW_OF_2@ 
+
+#endif // FFT_CONFIG_H
+
+
+

@@ -4,7 +4,6 @@
 #include <fftw3.h>
 #include <math.h>
 #include <assert.h>
-
 #include "chirpz.hpp"
 #include "helper.hpp"
 #include "config.h"
@@ -64,7 +63,7 @@ void transpose3d_rev(float2 *inp, const unsigned num){
   delete[] tmp;
 }
 
-void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num){
+void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv){
 
   assert ( (inp != NULL) || (out != NULL));
   if(num <= 0){ throw("Bad number of points for 3D FFT "); }
@@ -76,7 +75,7 @@ void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num){
   
   // xy plane chirp
   for(size_t i = 0; i < num; i++){
-    chirpz2d_cpu(&inp[i * num * num], &temp[i * num * num], num);
+    chirpz2d_cpu(&inp[i * num * num], &temp[i * num * num], num, inv);
   }
 
   // so-called xz corner turn: xyz -> xzy
@@ -84,7 +83,7 @@ void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num){
 
   // yx plane chirp
   for(size_t i = 0; i < (num * num); i++){
-    chirpz1d_cpu(&temp[i * num], &out[i * num], num);
+    chirpz1d_cpu(&temp[i * num], &out[i * num], num, inv);
   }
 
   // reverse xz corner turn: xzy -> xyz
@@ -135,11 +134,13 @@ bool verify_chirp3d(float2 *inp, float2 *out, const unsigned num){
 
   // Calculate SNR
   float db = 10 * log(mag_sum / noise_sum) / log(10.0);
-  if(db > 120){
-    return true;
-  }
-  else{
+
+  printf("SNR achieved: %f\n", db);
+  bool status = false;
+  if(db > 90) // reducing SNR from 120 to 90
+    status = true;
+  else
     printf("\tSignal to noise ratio on output sample: %f --> %s\n\n", db, "FAILED");
-    return false;
-  }
+
+  return status;
 }

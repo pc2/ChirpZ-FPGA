@@ -25,7 +25,7 @@ The following libraries have to be loaded in noctua in order to build the target
    `module load devel/CMake`
 
 ```bash
-module load intelFPGA_pro/21.2.0 nalla_pcie/20.4.0_hpc numlib/FFTW devel/CMake compiler/GCC
+module load intelFPGA_pro/21.2.0 nalla_pcie/20.4.0_hpc numlib/FFTW devel/CMake 
 ```
 
 ### Build examples
@@ -42,6 +42,12 @@ make all
 
 # build only src 
 make chirpz
+
+# build emulation bitstream
+make chirp1d_emulate
+
+# build hardware bitstream
+make chirp1d_syn
 
 # build only test 
 make test_chirpz
@@ -62,15 +68,20 @@ Usage:
   -i, --iter arg   Number of iterations (default: 1)
   -y, --noverify   No verification
   -b, --batch arg  Num of even batches (default: 1)
-  -s, --usesvm     SVM enabled
+  -s, --use_svm    SVM enabled
+  -e, --emulate    toggle emulation
+  -k, --back       Toggle Backward FFT
   -h, --help       Print usage
 ```
 
-To execute:
+To execute on CPU:
 
 ```bash
 # 1D Chirp
 ./chirpz --cpu-only -n 84 -d 1
+
+# 1D Chirp Inverse
+./chirpz --cpu-only -n 84 -d 1 -k
 
 # 2D Chirp
 ./chirpz --cpu-only -n 31 -d 2
@@ -80,6 +91,19 @@ To execute:
 
 # Run all tests
 ./test_chirpz
+```
+
+To emulate FPGA:
+
+```bash
+# 1D Chirp with batched execution for an average of iterations
+./chirpz -p <emulation_bitstream_path> -n 31 -d 1 --emulate --batch=3 --iter=20
+```
+
+To run on FPGA:
+
+```bash
+./chirpz -p <path_to_bitstream> -n 31 -d 1 --batch=3 --iter=20
 ```
 
 ## Result Interpretation

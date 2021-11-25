@@ -1,6 +1,7 @@
 stages:
   - build
   - run_1dchirp
+  - run_1dchirp_inv
   - run_2dchirp
   - run_3dchirp
   - test
@@ -22,6 +23,12 @@ run_1dchirp:
   script:
     - cd build/bin
     - ./chirpz --cpu-only -n 31 -d 1
+
+run_1dchirp_inv:
+  stage: run_1dchirp_inv
+  script:
+    - cd build/bin
+    - ./chirpz --cpu-only -n 31 -d 1 -k
 
 run_2dchirp:
   stage: run_2dchirp

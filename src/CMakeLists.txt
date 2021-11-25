@@ -1,6 +1,8 @@
 # External Dependencies
 cmake_minimum_required(VERSION 3.18)
-project(chirpz-cpu)
+project(chirpz-cpu VERSION 1.0
+          DESCRIPTION "Application for ChirpZ FFTs using FPGAs"
+          LANGUAGES C CXX)
 
 set(FFTW_PLAN "FFTW_ESTIMATE" CACHE STRING "FFTW Plan")
 set_property(CACHE FFTW_PLAN PROPERTY STRINGS "FFTW_ESTIMATE" "FFTW_MEASURE" "FFTW_PATIENT" "FFTW_EXHAUSTIVE")
@@ -23,14 +25,16 @@ target_compile_options(chirpz PRIVATE -Wall -Werror)
 target_compile_features(chirpz PRIVATE cxx_std_17)
 
 target_include_directories(chirpz 
-  PRIVATE ${PROJECT_SOURCE_DIR} 
+  PRIVATE ${chirpzfpga_INCLUDE_DIRS}
+          ${PROJECT_SOURCE_DIR} 
           ${PROJECT_SOURCE_DIR}/include
           ${IntelFPGAOpenCL_INCLUDE_DIRS}
           ${CMAKE_BINARY_DIR}/include 
           ${FFTW_INCLUDE_DIRS})
 
 target_link_libraries(chirpz 
-  PRIVATE cxxopts OpenMP::OpenMP_CXX  
+  PRIVATE cxxopts OpenMP::OpenMP_CXX 
+    chirpzfpga 
     ${IntelFPGAOpenCL_LIBRARIES})
 
 if(FFTW_FOUND)

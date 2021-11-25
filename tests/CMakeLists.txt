@@ -18,7 +18,8 @@ target_include_directories(test_chirpz
 )
 
 target_link_libraries(test_chirpz PRIVATE 
-  gtest_main gtest gmock
+  gtest_main gtest gmock 
   cxxopts OpenMP::OpenMP_CXX ${IntelFPGAOpenCL_LIBRARIES}
   fftw3 fftw3f ${FFTW_FLOAT_LIB} ${FFTW_FLOAT_OPENMP_LIB} 
+  chirpzfpga
 )
