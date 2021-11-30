@@ -30,17 +30,32 @@ void transpose2d(float2 *temp, const unsigned num){
   free(tmp);
 }
 
-bool verify_chirp2d(float2 *inp, float2 *out, const unsigned num){
+bool verify_chirp2d(vector<float2> inp, vector<float2> out, const unsigned num, const unsigned batch, const bool inverse){
 
-  assert ( (inp != NULL) || (out != NULL));
   if(num <= 1){ throw("Bad number of points for verifying 2D FFT "); }
 
-  unsigned sz = num * num;
-  fftwf_complex *fftwf_verify = fftwf_alloc_complex(sz);
+  const unsigned total_sz = batch * num * num;
 
-  fftwf_plan plan_fftwf = fftwf_plan_dft_2d((int)num, (int)num, fftwf_verify, fftwf_verify, FFTW_FORWARD, FFTW_MEASURE);
+  int *n = (int*)calloc(2 , sizeof(int));
+  for(unsigned i = 0; i < 2; i++){
+    n[i] = num;
+  }
+  
+  int idist = num * num, odist = num * num;
+  int istride = 1, ostride = 1; // contiguous in memory
 
-  for(unsigned i = 0; i < sz; i++){
+  fftwf_complex *fftwf_verify = fftwf_alloc_complex(total_sz);
+
+  fftwf_plan plan_fftwf;
+  if(inverse){
+    printf("\tInverse transform\n");
+    plan_fftwf = fftwf_plan_many_dft(2, n, batch, &fftwf_verify[0], NULL, istride, idist, &fftwf_verify[0], NULL, ostride, odist, FFTW_BACKWARD, FFTW_ESTIMATE);
+  }
+  else{
+    plan_fftwf = fftwf_plan_many_dft(2, n, batch, &fftwf_verify[0], NULL, istride, idist, &fftwf_verify[0], NULL, ostride, odist, FFTW_FORWARD, FFTW_ESTIMATE);
+  }
+
+  for(unsigned i = 0; i < total_sz; i++){
     fftwf_verify[i][0] = inp[i].x;
     fftwf_verify[i][1] = inp[i].y;
   }
@@ -48,7 +63,7 @@ bool verify_chirp2d(float2 *inp, float2 *out, const unsigned num){
   fftwf_execute(plan_fftwf);
 
   float magnitude = 0.0, noise = 0.0, mag_sum = 0.0, noise_sum = 0.0;
-  for(size_t i = 0; i < num*num; i++) {
+  for(size_t i = 0; i < total_sz; i++) {
     magnitude = fftwf_verify[i][0] * fftwf_verify[i][0] + \
                       fftwf_verify[i][1] * fftwf_verify[i][1];
     noise = (fftwf_verify[i][0] - out[i].x) \
@@ -61,7 +76,7 @@ bool verify_chirp2d(float2 *inp, float2 *out, const unsigned num){
 
 #ifndef NDEBUG
   cout << endl;
-  for(unsigned i = 0; i < num*num; i++){
+  for(unsigned i = 0; i < total_sz; i++){
     printf("%d: Impl: (%f, %f), FFTW: (%f, %f)\n", i, out[i].x, out[i].y, fftwf_verify[i][0], fftwf_verify[i][1]);
   }
   cout << endl << endl;
@@ -84,28 +99,30 @@ bool verify_chirp2d(float2 *inp, float2 *out, const unsigned num){
 }
 
 // Chirp Z implementation
-void chirpz2d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv){
+void chirpz2d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv, const unsigned batch){
 
   assert ( (inp != NULL) || (out != NULL));
-
   float2 *temp = new float2[num * num];
-  
-  // Row wise Chirp
-  for(unsigned i = 0; i < num; i++){
-    printf("Row: %u\n", i);
-    chirpz1d_cpu(&inp[i * num], &temp[i*num], num, inv);
+    
+  for(unsigned iter = 0; iter < batch; iter++){
+
+    unsigned index = (iter * num * num);
+
+    // Row wise Chirp
+    for(unsigned i = 0; i < num; i++){
+      chirpz1d_cpu(&inp[index + (i * num)], &temp[i*num], num, inv);
+    }
+    // Transpose
+    transpose2d(temp, num);
+
+    // Column wise Chirp
+    for(unsigned i = 0; i < num; i++){
+      chirpz1d_cpu(&temp[i * num], &out[index + (i * num)], num, inv);
+    }
+
+    // Transpose
+    transpose2d(&out[index], num);
+
   }
-  // Transpose
-  transpose2d(temp, num);
-
-  // Column wise Chirp
-  for(unsigned i = 0; i < num; i++){
-    printf("Col: %u\n", i);
-    chirpz1d_cpu(&temp[i * num], &out[i*num], num, inv);
-  }
-
-  // Transpose
-  transpose2d(out, num);
-
   delete[] temp;
 }

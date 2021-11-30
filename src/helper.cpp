@@ -132,7 +132,7 @@ void parse_args(int argc, char* argv[], CONFIG &config){
     config.batch = opt["batch"].as<unsigned>();
     config.inv = opt["back"].as<bool>();
 
-    if(config.cpuonly && config.batch > 1){
+    if(config.cpuonly && config.batch > 1 && config.dim == 1){
       throw "Batched CPU ChirpZ not implemented, only FPGA\n";
     }
     config.noverify = opt["noverify"].as<bool>();

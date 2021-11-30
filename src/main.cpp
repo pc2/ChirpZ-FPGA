@@ -56,9 +56,9 @@ int main(int argc, char* argv[]){
           case 2: {
             cout << "-- 2D Chirp" << endl;
             cout << "-- Executing ...\n";
-            chirpz2d_cpu(inp.data(), out.data(), num, chirpz_config.inv);
+            chirpz2d_cpu(inp.data(), out.data(), num, chirpz_config.inv, chirpz_config.batch);
             cout << "-- Verifying ...\n";
-            status = verify_chirp2d(inp.data(), out.data(), num);
+            status = verify_chirp2d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
             break;
           }
           case 3:{
@@ -82,6 +82,14 @@ int main(int argc, char* argv[]){
             cout << "-- Verifying ...\n";
             status = verify_chirp1d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
             break;
+          }
+          case 2:{
+            printf("Iteration %u\n-- 2D Chirp\n", i);
+            runtime[i] = fftfpgaf_c2c_chirp2d_bram(num, inp.data(), out.data(), chirpz_config.inv, chirpz_config.batch);
+            cout << "-- Verifying ...\n";
+            status = verify_chirp2d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
+            break;
+
           }
           default:{
             cout << "Other dimensions are not implemented yet" << endl;
