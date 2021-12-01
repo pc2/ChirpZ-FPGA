@@ -75,7 +75,7 @@ void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv){
   
   // xy plane chirp
   for(size_t i = 0; i < num; i++){
-    chirpz2d_cpu(&inp[i * num * num], &temp[i * num * num], num, inv);
+    chirpz2d_cpu(&inp[i * num * num], &temp[i * num * num], num, inv, 1);
   }
 
   // so-called xz corner turn: xyz -> xzy
