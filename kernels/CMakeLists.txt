@@ -37,11 +37,16 @@ set(LOG_FFT_SIZE 6 CACHE STRING "Log of points of FFT")
 set_property(CACHE LOG_FFT_SIZE PROPERTY STRINGS 4 5 6 7 8 9)
 math(EXPR FFT_SIZE "1 << ${LOG_FFT_SIZE}")
 message("-- FFT size is ${FFT_SIZE}")
-math(EXPR DEPTH "1 << (${LOG_FFT_SIZE} + ${LOG_FFT_SIZE} - ${LOG_POINTS})")
+#math(EXPR DEPTH "1 << (${LOG_FFT_SIZE} + ${LOG_FFT_SIZE} - ${LOG_POINTS})")
 
 # Chirp Z transform variables
+math(EXPR LOG_NEAREST_POW_OF_2 "${LOG_FFT_SIZE} - 1")
 math(EXPR NEAREST_POW_OF_2 "${FFT_SIZE} >> 1")
 message("-- Nearest Power of 2 for Chirp Z: ${NEAREST_POW_OF_2}")
+message("-- Log of Nearest Power of 2 for Chirp Z: ${LOG_NEAREST_POW_OF_2}")
+
+math(EXPR DEPTH "${NEAREST_POW_OF_2} * ${NEAREST_POW_OF_2} / 8")
+message("-- Depth of Transpose Buffer: ${DEPTH}")
 
 # Toggle to append the right parameters to AOC Flags
 set(BURST_INTERLEAVING CACHE BOOL "Enable burst interleaving")
@@ -90,6 +95,7 @@ separate_arguments(PROF_FLAGS)
 
 if (INTELFPGAOPENCL_FOUND)
   add_subdirectory(chirp1d)
+  add_subdirectory(chirp2d)
 else()
   message(FATAL_ERROR, "Intel FPGA OpenCL SDK not found!")
 endif()

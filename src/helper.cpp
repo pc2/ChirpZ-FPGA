@@ -116,7 +116,7 @@ void parse_args(int argc, char* argv[], CONFIG &config){
     }
 
     config.cpuonly = opt["cpu-only"].as<bool>();
-    if( (opt.count("path") && config.cpuonly) || (opt.count("path") && config.emulate))
+    if( (opt.count("path") && config.cpuonly))
       throw "\tRun either cpu or emulation fpga";
     
     if(!config.cpuonly){

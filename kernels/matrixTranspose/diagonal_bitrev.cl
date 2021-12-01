@@ -97,6 +97,10 @@ float2x8 readBuf(float2 buf[DEPTH][POINTS], unsigned step){
   return data;
 }
 
+/*
+ * \brief Bitreversal of a number, obtained as output from FFT1D Kernel
+ * \ret   number obtained on bitreversal
+ */
 unsigned bit_reversed(unsigned x, unsigned bits) {
   unsigned y = 0;
   #pragma unroll 
@@ -105,6 +109,7 @@ unsigned bit_reversed(unsigned x, unsigned bits) {
     y |= x & 1;
     x >>= 1;
   }
+  y &= ((1 << bits) - 1);
   return y;
 }
 
@@ -159,7 +164,7 @@ void writeBuf(float2x8 data, float2 buf[DEPTH][POINTS], int step, unsigned delay
   rot_bitrev_in[6] = data.i6;
   rot_bitrev_in[7] = data.i7;
 
-  unsigned rot = ((step + delay) >> (LOGN - LOGPOINTS)) & (POINTS - 1);
+  unsigned rot = ((step + delay) >> (LOGM - LOGPOINTS)) & (POINTS - 1);
   unsigned row_in = (step + delay) & (DEPTH - 1); 
 
   #pragma unroll POINTS
@@ -169,20 +174,20 @@ void writeBuf(float2x8 data, float2 buf[DEPTH][POINTS], int step, unsigned delay
 }
 
 float2x8 readBuf_store(float2 buf[DEPTH][POINTS], unsigned step){
-  unsigned base = (step & (N / POINTS - 1)) << LOGN; // 0, N, 2N, ...
-  unsigned offset = (step >> LOGN) & ((N / 8) - 1);  // 0, .. N / POINTS
+  unsigned base = (step & (NEAREST_POW_OF_2 / POINTS - 1)) << LOGM; // 0, N, 2N, ...
+  unsigned offset = (step >> LOGM) & ((NEAREST_POW_OF_2 / 8) - 1);  // 0, .. N / POINTS
 
   float2 rotate_out[POINTS];
   float2x8 data;
 
   #pragma unroll POINTS
   for(unsigned i = 0; i < POINTS; i++){
-    unsigned rot = ((POINTS + i - (step >> (LOGN - LOGPOINTS))) << (LOGN - LOGPOINTS)) & (N - 1);
+    unsigned rot = ((POINTS + i - (step >> (LOGM - LOGPOINTS))) << (LOGM - LOGPOINTS)) & (NEAREST_POW_OF_2 - 1);
     unsigned row_rotate = (base + offset + rot);
     rotate_out[i] = buf[row_rotate][i];
   }
 
-  unsigned rot_out = (step >> (LOGN - LOGPOINTS)) & (POINTS - 1);
+  unsigned rot_out = (step >> (LOGM - LOGPOINTS)) & (POINTS - 1);
   data.i0 = rotate_out[(0 + rot_out) & (POINTS - 1)];
   data.i1 = rotate_out[(1 + rot_out) & (POINTS - 1)];
   data.i2 = rotate_out[(2 + rot_out) & (POINTS - 1)];

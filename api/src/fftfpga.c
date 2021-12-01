@@ -23,7 +23,9 @@ cl_program program = NULL;
 
 cl_command_queue queue1 = NULL, queue2 = NULL, queue3 = NULL;
 cl_command_queue queue4 = NULL, queue5 = NULL, queue6 = NULL;
-cl_command_queue queue7 = NULL, queue8 = NULL;
+cl_command_queue queue7 = NULL, queue8 = NULL, queue9 = NULL;
+cl_command_queue queue10 = NULL, queue11 = NULL, queue12 = NULL;
+cl_command_queue queue13 = NULL, queue14 = NULL, queue15 = NULL;
 
 //static int svm_handle;
 bool svm_enabled = false;
@@ -160,9 +162,23 @@ void queue_setup(){
   queue6 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
   checkError(status, "Failed to create command queue6");
   queue7 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
-  checkError(status, "Failed to create command queue6");
+  checkError(status, "Failed to create command queue7");
   queue8 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
-  checkError(status, "Failed to create command queue6");
+  checkError(status, "Failed to create command queue8");
+  queue9 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue9");
+  queue10 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue10");
+  queue11 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue11");
+  queue12 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue12");
+  queue13 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue13");
+  queue14 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue14");
+  queue15 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue15");
 }
 
 /**
@@ -185,4 +201,19 @@ void queue_cleanup() {
     clReleaseCommandQueue(queue7);
   if(queue8) 
     clReleaseCommandQueue(queue8);
+  if(queue9) 
+    clReleaseCommandQueue(queue9);
+  if(queue10) 
+    clReleaseCommandQueue(queue10);
+  if(queue11) 
+    clReleaseCommandQueue(queue11);
+  if(queue12) 
+    clReleaseCommandQueue(queue12);
+  if(queue13) 
+    clReleaseCommandQueue(queue13);
+  if(queue14) 
+    clReleaseCommandQueue(queue14);
+  if(queue15) 
+    clReleaseCommandQueue(queue15);
+
 }
