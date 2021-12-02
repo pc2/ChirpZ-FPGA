@@ -266,7 +266,7 @@ fpga_t fftfpgaf_c2c_chirp2d_bram(const unsigned num, const float2 *inp, float2 *
   cl_event startFilter_event, stopFilter_event;
   cl_event startSignal_event, stopSignal_event;
   cl_event writeBuf_event, genW_event;
-  status = clEnqueueWriteBuffer(queue1, d_Signal, CL_FALSE, 0, sizeof(float2) * num * next_num * batch, temp_in, 0, NULL, &writeBuf_event);
+  status = clEnqueueWriteBuffer(queue1, d_Signal, CL_FALSE, 0, sizeof(float2) * next_num * next_num * batch, temp_in, 0, NULL, &writeBuf_event);
   checkError(status, "failed to finish writing inp data to device buffer d_Signal");
 
   status = clEnqueueTask(queue2, kernel_gen_W, 0, NULL, &genW_event);
@@ -437,14 +437,14 @@ fpga_t fftfpgaf_c2c_chirp2d_bram(const unsigned num, const float2 *inp, float2 *
   clGetEventProfilingInfo(genW_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernelgenW_end, NULL);
 
   double genW_t = (cl_double)(kernelgenW_end - kernelgenW_start) * (cl_double)(1e-06); 
-  printf("\tKernel Execution: Gen W and Filter creation %lfms\n", genW_t);
+  printf("\tGen W and Filter creation: %lfms\n", genW_t);
 
+  cl_ulong kernelFilter_start = 0.0f, kernelFilter_end = 0.0f;
+  clGetEventProfilingInfo(startFilter_event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &kernelFilter_start, NULL);
+  clGetEventProfilingInfo(stopFilter_event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernelFilter_end, NULL);
 
-  printf("Output Buffer:\n");
-  for(unsigned i = 0; i < batch * next_num * next_num; i++){
-    printf("%u: (%f, %f)\n", i, temp_out[i].x, temp_out[i].y);
-  }
-  printf("\n");
+  double filter_fourier_t = (cl_double)(kernelFilter_end - kernelFilter_start) * (cl_double)(1e-06); 
+  printf("\tFilter transformation: %lfms\n\n", filter_fourier_t);
 
   // Reorder output without the padded zeroes
   for(unsigned i = 0; i < batch; i++){
@@ -455,11 +455,6 @@ fpga_t fftfpgaf_c2c_chirp2d_bram(const unsigned num, const float2 *inp, float2 *
       }
     }
   }
-  for(unsigned i = 0; i < batch * num * num; i++){
-    printf("%u: (%f, %f)\n", i, out[i].x, out[i].y);
-  }
-  printf("\n");
-
 
   if(d_bufW)
   	clReleaseMemObject(d_bufW);

@@ -168,7 +168,6 @@ kernel void fetch1(
 
       #pragma unroll 8
       for(unsigned i = 0; i < 8; i++){
-        //printf("Fetch[%u]: (%f, %f)\n", (step * 8) + i, data[i][0], data[i][1]);
         write_channel_intel(chaninmod1[i], data[i]);
       }
     }
@@ -354,13 +353,6 @@ kernel void multiplication1(
       filter_bitrev[(step * 8) + i] = filter[(step * 8) + i];
     }
   }
-
-  /*
-  for(unsigned i = 0; i < chirp_num; i++){
-    printf("f_mul1[%u]: (%f, %f)\n", i, filter_bitrev[i].x, filter_bitrev[i].y);
-  }
-  printf("\n");
-  */
 
   for(unsigned row = 0; row < count; row++){
 
@@ -568,7 +560,6 @@ kernel void demodulate1(
     #pragma unroll 8
     for(unsigned i = 0; i < 8; i++){
       data[i] = read_channel_intel(chanindemod1[i]);
-      //printf("mod[%u]: (%f, %f)\n", (step * 8) + i, data[i].x, data[i].y);
     }
 
     // modulate and store
@@ -588,9 +579,7 @@ kernel void demodulate1(
 
       float2 data_out = ( ((step * 8) + i) & (NEAREST_POW_OF_2 - 1)) < num ? data[i]: tempzero;
 
-      //printf("Mod_out[%u]: (%f, %f)\n", (step * 8) + i, data_out.x, data_out.y);
       write_channel_intel(chanintranspose[i], data_out);
-      //dest[(step * 8) + i] = ( ((step * 8) + i) & (NEAREST_POW_OF_2 - 1)) < num ? data[i]: tempzero;
     }
   }
 }
@@ -623,16 +612,6 @@ kernel void transpose(
     }
     // Swap buffers every N*N/8 iterations 
     // starting from the additional delay of N/8 iterations
-    /*
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 0, data.i0.x, data.i0.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 1, data.i1.x, data.i1.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 2, data.i2.x, data.i2.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 3, data.i3.x, data.i3.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 4, data.i4.x, data.i4.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 5, data.i5.x, data.i5.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 6, data.i6.x, data.i6.y);
-    printf("trans_in[%u]: (%f, %f)\n", (step*8) + 7, data.i7.x, data.i7.y);
-    */
 
     is_bufA = (( step & (DEPTH - 1)) == 0) ? !is_bufA: is_bufA;
 
@@ -647,15 +626,6 @@ kernel void transpose(
     if (step >= DEPTH) {
       unsigned index = (step - DEPTH) * 8;
 
-      //printf("trans[%u]: (%f, %f)\n", index+0, data_out.i0.x, data_out.i0.y);
-      //printf("trans[%u]: (%f, %f)\n", index+1, data_out.i1.x, data_out.i1.y);
-      //printf("trans[%u]: (%f, %f)\n", index+2, data_out.i2.x, data_out.i2.y);
-      //printf("trans[%u]: (%f, %f)\n", index+3, data_out.i3.x, data_out.i3.y);
-      //printf("trans[%u]: (%f, %f)\n", index+4, data_out.i4.x, data_out.i4.y);
-      //printf("trans[%u]: (%f, %f)\n", index+5, data_out.i5.x, data_out.i5.y);
-      //printf("trans[%u]: (%f, %f)\n", index+6, data_out.i6.x, data_out.i6.y);
-      //printf("trans[%u]: (%f, %f)\n", index+7, data_out.i7.x, data_out.i7.y);
-
       write_channel_intel(chaninmod2[0], data_out.i0);
       write_channel_intel(chaninmod2[1], data_out.i1);
       write_channel_intel(chaninmod2[2], data_out.i2);
@@ -666,8 +636,6 @@ kernel void transpose(
       write_channel_intel(chaninmod2[7], data_out.i7);
     }
   }
-
-  //printf("\n");
 
 }
 
@@ -711,7 +679,6 @@ kernel void modulate2(
       #pragma unroll 8
       for(unsigned i = 0; i < 8; i++){
         data[i] = ( ((step * 8) + i) >= next_num) ? tempzero : read_channel_intel(chaninmod2[i]);
-        //printf("Mod2[%u]: (%f, %f)\n", (row * chirp_num) + (step * 8) + i, data[i].x, data[i].y);
       }
 
       // Modulate signal with W otherwise passthrough (for filter)
@@ -745,12 +712,7 @@ kernel void modulate2(
       write_channel_intel(chaninfft2[6], buf[3 * chirp_num / 8 + step]); // 24
       write_channel_intel(chaninfft2[7], buf[7 * chirp_num / 8 + step]); // 54
     }
-    /*
-    for(unsigned i = 0; i < chirp_num; i++){
-      printf("Mod2[%u]: (%f, %f)\n", (row * chirp_num) + i, buf[i].x, buf[i].y);
-    }
-    printf("\n");
-    */
+ 
   }   // rows
 }
 
@@ -811,16 +773,6 @@ kernel void fft1d_2(
      */
 
     if (i >= N / 8 - 1) {
-      /*
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 0, data.i0.x, data.i0.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 1, data.i1.x, data.i1.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 2, data.i2.x, data.i2.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 3, data.i3.x, data.i3.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 4, data.i4.x, data.i4.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 5, data.i5.x, data.i5.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 6, data.i6.x, data.i6.y);
-      printf("fft2[%u]: (%f, %f)\n", (i*8) + 7, data.i7.x, data.i7.y);
-      */
       write_channel_intel(chaninmult2[0], data.i0);
       write_channel_intel(chaninmult2[1], data.i1);
       write_channel_intel(chaninmult2[2], data.i2);
@@ -851,13 +803,6 @@ kernel void multiplication2(
     filter_bitrev[step] = filter[step];
   }
 
-  /*
-  for(unsigned i = 0; i < chirp_num; i++){
-    printf("f_mul2[%u]: (%f, %f)\n", i, filter_bitrev[i].x, filter_bitrev[i].y);
-  }
-  printf("\n");
-  */
-
   for(unsigned row = 0; row < count; row++){
 
     float2 tempBuf1[NEAREST_POW_OF_2 + NEAREST_POW_OF_2];
@@ -876,7 +821,6 @@ kernel void multiplication2(
         out.x = (x * temp.x) - (y * temp.y);
         out.y = (x * temp.y) + (y * temp.x);
 
-        //printf("%u: filter: (%f, %f), read: (%f, %f), out: (%f, %f)\n", (row * chirp_num) + (step * 8) + i, x, y, temp.x, temp.y, out.x, out.y);
         tempBuf1[(step * 8) + i].x = out.x;
         tempBuf1[(step * 8) + i].y = out.y;
       }
@@ -918,12 +862,6 @@ kernel void multiplication2(
       write_channel_intel(chaninifft2[6], tempBuf2[3*chirp_num/8 + step]); // 24
       write_channel_intel(chaninifft2[7], tempBuf2[7*chirp_num/8 + step]); // 54
     }
-    /*
-    for(unsigned test= 0; test < chirp_num; test++){
-      printf("Mult2[%u]: (%f, %f)\n", (row * chirp_num) + test, tempBuf2[test].x, tempBuf2[test].y);
-    }
-    printf("\n");
-    */
   } // row
 }
 
@@ -1090,9 +1028,7 @@ kernel void demodulate2(
 
       float2 data_out = ( ((step * 8) + i) & (NEAREST_POW_OF_2 - 1)) < num ? data[i]: tempzero;
 
-      //printf("Mod_out[%u]: (%f, %f)\n", (step * 8) + i, data_out.x, data_out.y);
       write_channel_intel(chanintransposeStore[i], data_out);
-      //dest[(step * 8) + i] = ( ((step * 8) + i) & (NEAREST_POW_OF_2 - 1)) < num ? data[i]: tempzero;
     }
   }
 }
@@ -1122,17 +1058,6 @@ kernel void transposeStore(
       data.i0 = data.i1 = data.i2 = data.i3 = 
                 data.i4 = data.i5 = data.i6 = data.i7 = 0;
     }
-    /*
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 0, data.i0.x, data.i0.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 1, data.i1.x, data.i1.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 2, data.i2.x, data.i2.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 3, data.i3.x, data.i3.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 4, data.i4.x, data.i4.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 5, data.i5.x, data.i5.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 6, data.i6.x, data.i6.y);
-    printf("trans_in2[%u]: (%f, %f)\n", (step*8) + 7, data.i7.x, data.i7.y);
-    */
-
     // Swap buffers every N*N/8 iterations 
     // starting from the additional delay of N/8 iterations
     is_bufA = (( step & (DEPTH - 1)) == 0) ? !is_bufA: is_bufA;
@@ -1147,7 +1072,6 @@ kernel void transposeStore(
 
     if (step >= DEPTH) {
       unsigned index = (step - DEPTH) * 8;
-      //printf("dest[%u]\n", index);
 
       dest[index + 0] = data_out.i0;
       dest[index + 1] = data_out.i1;
