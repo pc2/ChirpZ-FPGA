@@ -64,8 +64,9 @@ int main(int argc, char* argv[]){
           case 3:{
             cout << "3D Chirp" << endl;
             cout << "-- Executing ...\n";
-            chirpz3d_cpu(inp.data(), out.data(), num, chirpz_config.inv);
-            status = verify_chirp3d(inp.data(), out.data(), num);
+            chirpz3d_cpu(inp.data(), out.data(), num, chirpz_config.inv, chirpz_config.batch);
+            cout << "-- Verifying ...\n";
+            status = verify_chirp3d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
             break;
           }
           default:{
@@ -88,6 +89,10 @@ int main(int argc, char* argv[]){
             runtime[i] = fftfpgaf_c2c_chirp2d_bram(num, inp.data(), out.data(), chirpz_config.inv, chirpz_config.batch);
             cout << "-- Verifying ...\n";
             status = verify_chirp2d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
+            break;
+          }
+          case 3:{
+            printf("Iteration %u\n-- 3D Chirp\n", i);
             break;
 
           }

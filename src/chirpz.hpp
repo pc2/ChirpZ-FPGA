@@ -39,7 +39,7 @@ bool verify_chirp1d(std::vector<float2> inp, std::vector<float2> out, const unsi
 void chirpz2d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inverse, const unsigned batch);
 bool verify_chirp2d(std::vector<float2> inp, std::vector<float2> out, const unsigned num, const unsigned batch, const bool inverse);
 
-void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inverse);
-bool verify_chirp3d(float2 *inp, float2 *out, const unsigned num);
+void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inverse, const unsigned batch);
+bool verify_chirp3d(std::vector<float2> inp, std::vector<float2> out, const unsigned num, const unsigned batch, const bool inverse);
 
 #endif 

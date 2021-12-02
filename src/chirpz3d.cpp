@@ -63,7 +63,7 @@ void transpose3d_rev(float2 *inp, const unsigned num){
   delete[] tmp;
 }
 
-void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv){
+void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv, const unsigned batch){
 
   assert ( (inp != NULL) || (out != NULL));
   if(num <= 0){ throw("Bad number of points for 3D FFT "); }
@@ -73,44 +73,62 @@ void chirpz3d_cpu(float2 *inp, float2 *out, const unsigned num, const bool inv){
 
   float2 *temp = new float2[num * num * num];
   
-  // xy plane chirp
-  for(size_t i = 0; i < num; i++){
-    chirpz2d_cpu(&inp[i * num * num], &temp[i * num * num], num, inv, 1);
+  for(unsigned iter = 0; iter < batch; iter++){
+
+    unsigned index = (iter * num * num * num);
+    // xy plane chirp
+    for(size_t i = 0; i < num; i++){
+      chirpz2d_cpu(&inp[index + (i * num * num)], &temp[i * num * num], num, inv, 1);
+    }
+
+    // so-called xz corner turn: xyz -> xzy
+    transpose3d(temp, num);
+
+    // yx plane chirp
+    for(size_t i = 0; i < (num * num); i++){
+      chirpz1d_cpu(&temp[i * num], &out[index + (i * num)], num, inv);
+    }
+
+    // reverse xz corner turn: xzy -> xyz
+    transpose3d_rev(&out[index], num);
   }
-
-  // so-called xz corner turn: xyz -> xzy
-  transpose3d(temp, num);
-
-  // yx plane chirp
-  for(size_t i = 0; i < (num * num); i++){
-    chirpz1d_cpu(&temp[i * num], &out[i * num], num, inv);
-  }
-
-  // reverse xz corner turn: xzy -> xyz
-  transpose3d_rev(out, num);
 
   delete[] temp;
 }
 
-bool verify_chirp3d(float2 *inp, float2 *out, const unsigned num){
+bool verify_chirp3d(vector<float2> inp, vector<float2> out, const unsigned num, const unsigned batch, const bool inverse){
 
-  assert ( (inp != NULL) || (out != NULL));
   if(num <= 1){ throw("Bad number of points for verifying 3D FFT "); }
 
-  unsigned sz = num * num * num;
-  fftwf_complex *fftwf_verify = fftwf_alloc_complex(sz);
+  const unsigned total_sz = batch * num * num * num;
 
-  fftwf_plan plan_fftwf = fftwf_plan_dft_3d((int)num, (int)num, (int)num, fftwf_verify, fftwf_verify, FFTW_FORWARD, FFTW_MEASURE);
+  int *n = (int*)calloc(3 , sizeof(int));
+  for(unsigned i = 0; i < 3; i++){
+    n[i] = num;
+  }
 
-  for(unsigned i = 0; i < sz; i++){
+  int idist = num * num * num, odist = num *num * num;
+  int istride = 1, ostride = 1; // contiguous in memory
+
+  fftwf_complex *fftwf_verify = fftwf_alloc_complex(total_sz);
+
+  fftwf_plan plan_fftwf;
+  if(inverse){
+    printf("\tInverse transform\n");
+    plan_fftwf = fftwf_plan_many_dft(3, n, batch, &fftwf_verify[0], NULL, istride, idist, &fftwf_verify[0], NULL, ostride, odist, FFTW_BACKWARD, FFTW_ESTIMATE);
+  }
+  else{
+    plan_fftwf = fftwf_plan_many_dft(3, n, batch, &fftwf_verify[0], NULL, istride, idist, &fftwf_verify[0], NULL, ostride, odist, FFTW_FORWARD, FFTW_ESTIMATE);
+  }
+
+  for(unsigned i = 0; i < total_sz; i++){
     fftwf_verify[i][0] = inp[i].x;
     fftwf_verify[i][1] = inp[i].y;
   }
-
   fftwf_execute(plan_fftwf);
 
   float magnitude = 0.0, noise = 0.0, mag_sum = 0.0, noise_sum = 0.0;
-  for(size_t i = 0; i < sz; i++) {
+  for(size_t i = 0; i < total_sz; i++) {
     magnitude = fftwf_verify[i][0] * fftwf_verify[i][0] + \
                       fftwf_verify[i][1] * fftwf_verify[i][1];
     noise = (fftwf_verify[i][0] - out[i].x) \
@@ -123,7 +141,7 @@ bool verify_chirp3d(float2 *inp, float2 *out, const unsigned num){
 
 #ifndef NDEBUG
   cout << endl;
-  for(unsigned i = 0; i < sz; i++){
+  for(unsigned i = 0; i < total_sz; i++){
     printf("%d: Impl: (%f, %f), FFTW: (%f, %f)\n", i, out[i].x, out[i].y, fftwf_verify[i][0], fftwf_verify[i][1]);
   }
   cout << endl << endl;
