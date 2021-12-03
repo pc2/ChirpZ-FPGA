@@ -277,12 +277,36 @@ fpga_t fftfpgaf_c2c_chirp2d_bram(const unsigned num, const float2 *inp, float2 *
   *  Transform Filter and store in bitreversed order in multiplication kernel
   */
   // kernel_mult and kernel_fft1da continues to execute also the signal
+
+  // only filter kernels
   status = clEnqueueTask(queue4, kernel_fft1d_1, 0, NULL, &stopFilter_event);
   checkError(status, "Failed to launch fft1d kernel");
   status = clEnqueueTask(queue3, kernel_mod1, 0, NULL, NULL);
   checkError(status, "Failed to launch modulate kernel");
   status = clEnqueueTask(queue2, kernel_fetch, 0, NULL, &startFilter_event);
   checkError(status, "Failed to launch fetch kernel");
+
+  // early starting signal kernels
+  status = clEnqueueTask(queue15, kernel_tranStore, 0, NULL, &stopSignal_event);
+  checkError(status, "Failed to launch tranStore kernel");
+  status = clEnqueueTask(queue14, kernel_demod2, 0, NULL, NULL);
+  checkError(status, "Failed to launch demod2 kernel");
+  status = clEnqueueTask(queue13, kernel_scale2, 0, NULL, NULL);
+  checkError(status, "Failed to launch scale2 kernel");
+  status = clEnqueueTask(queue12, kernel_ifft1d_2, 0, NULL, NULL);
+  checkError(status, "Failed to launch ifft1d_2 kernel");
+  status = clEnqueueTask(queue10, kernel_fft1d_2, 0, NULL, NULL);
+  checkError(status, "Failed to launch fft1d_2 kernel");
+  status = clEnqueueTask(queue9, kernel_mod2, 0, NULL, NULL);
+  checkError(status, "Failed to launch mod2 kernel");
+  status = clEnqueueTask(queue8, kernel_transpose, 0, NULL, NULL);
+  checkError(status, "Failed to launch transpose kernel");
+  status = clEnqueueTask(queue7, kernel_demod1, 0, NULL, NULL);
+  checkError(status, "Failed to launch demod kernel");
+  status = clEnqueueTask(queue6, kernel_scale1, 0, NULL, NULL);
+  checkError(status, "Failed to launch scale1 kernel");
+  status = clEnqueueTask(queue5, kernel_ifft1d_1, 0, NULL, NULL);
+  checkError(status, "Failed to launch ifft1d_1 kernel");
 
   // fft1d and mult continue to process the signal data also
   status = clFinish(queue4);
@@ -330,29 +354,10 @@ fpga_t fftfpgaf_c2c_chirp2d_bram(const unsigned num, const float2 *inp, float2 *
   status = clSetKernelArg(kernel_fft1d_1, 3, sizeof(cl_int), (void *)&inverse);
   checkError(status, "Failed to set kernel fft1d_1 arg 3");
 
-  // Queues 4,5,7 are occupied by FFT1da, mult and demod kernels respectively
-  status = clEnqueueTask(queue15, kernel_tranStore, 0, NULL, &stopSignal_event);
-  checkError(status, "Failed to launch tranStore kernel");
-  status = clEnqueueTask(queue14, kernel_demod2, 0, NULL, NULL);
-  checkError(status, "Failed to launch demod2 kernel");
-  status = clEnqueueTask(queue13, kernel_scale2, 0, NULL, NULL);
-  checkError(status, "Failed to launch scale2 kernel");
-  status = clEnqueueTask(queue12, kernel_ifft1d_2, 0, NULL, NULL);
-  checkError(status, "Failed to launch ifft1d_2 kernel");
+  // remaining kernels
   status = clEnqueueTask(queue11, kernel_mult2, 0, NULL, NULL);
   checkError(status, "Failed to launch multiplication 2 kernel");
-  status = clEnqueueTask(queue10, kernel_fft1d_2, 0, NULL, NULL);
-  checkError(status, "Failed to launch fft1d_2 kernel");
-  status = clEnqueueTask(queue9, kernel_mod2, 0, NULL, NULL);
-  checkError(status, "Failed to launch mod2 kernel");
-  status = clEnqueueTask(queue8, kernel_transpose, 0, NULL, NULL);
-  checkError(status, "Failed to launch transpose kernel");
-  status = clEnqueueTask(queue7, kernel_demod1, 0, NULL, NULL);
-  checkError(status, "Failed to launch demod kernel");
-  status = clEnqueueTask(queue6, kernel_scale1, 0, NULL, NULL);
-  checkError(status, "Failed to launch scale1 kernel");
-  status = clEnqueueTask(queue5, kernel_ifft1d_1, 0, NULL, NULL);
-  checkError(status, "Failed to launch ifft1d_1 kernel");
+
   status = clEnqueueTask(queue4, kernel_mult1, 0, NULL, NULL);
   checkError(status, "Failed to launch multiplication kernel");
   status = clEnqueueTask(queue3, kernel_fft1d_1, 0, NULL, NULL);
