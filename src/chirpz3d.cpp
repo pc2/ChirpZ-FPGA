@@ -155,7 +155,7 @@ bool verify_chirp3d(vector<float2> inp, vector<float2> out, const unsigned num, 
 
   printf("SNR achieved: %f\n", db);
   bool status = false;
-  if(db > 90) // reducing SNR from 120 to 90
+  if(db > 80) // reducing SNR from 120 to 80
     status = true;
   else
     printf("\tSignal to noise ratio on output sample: %f --> %s\n\n", db, "FAILED");
