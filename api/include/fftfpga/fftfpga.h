@@ -109,6 +109,8 @@ extern fpga_t fftfpgaf_c2c_chirp2d_bram_v2(const unsigned N, const float2 *inp, 
  */
 fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, const bool inv, const unsigned batch);
 
+fpga_t fftfpgaf_c2c_chirp3d_v2(const unsigned num, const float2 *inp, float2 *out, const bool inv, const unsigned batch);
+
 #ifdef __cplusplus
 }
 #endif
