@@ -86,13 +86,16 @@ int main(int argc, char* argv[]){
           }
           case 2:{
             printf("Iteration %u\n-- 2D Chirp\n", i);
-            runtime[i] = fftfpgaf_c2c_chirp2d_bram(num, inp.data(), out.data(), chirpz_config.inv, chirpz_config.batch);
+            runtime[i] = fftfpgaf_c2c_chirp2d_bram_v2(num, inp.data(), out.data(), chirpz_config.inv, chirpz_config.batch);
             cout << "-- Verifying ...\n";
             status = verify_chirp2d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
             break;
           }
           case 3:{
             printf("Iteration %u\n-- 3D Chirp\n", i);
+            runtime[i] = fftfpgaf_c2c_chirp3d(num, inp.data(), out.data(), chirpz_config.inv, chirpz_config.batch);
+            cout << "-- Verifying ...\n";
+            status = verify_chirp3d(inp, out, num, chirpz_config.batch, chirpz_config.inv);
             break;
 
           }

@@ -26,6 +26,7 @@ cl_command_queue queue4 = NULL, queue5 = NULL, queue6 = NULL;
 cl_command_queue queue7 = NULL, queue8 = NULL, queue9 = NULL;
 cl_command_queue queue10 = NULL, queue11 = NULL, queue12 = NULL;
 cl_command_queue queue13 = NULL, queue14 = NULL, queue15 = NULL;
+cl_command_queue queue16 = NULL;
 
 //static int svm_handle;
 bool svm_enabled = false;
@@ -179,6 +180,8 @@ void queue_setup(){
   checkError(status, "Failed to create command queue14");
   queue15 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
   checkError(status, "Failed to create command queue15");
+  queue16 = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &status);
+  checkError(status, "Failed to create command queue16");
 }
 
 /**
@@ -215,5 +218,6 @@ void queue_cleanup() {
     clReleaseCommandQueue(queue14);
   if(queue15) 
     clReleaseCommandQueue(queue15);
-
+  if(queue16) 
+    clReleaseCommandQueue(queue16);
 }

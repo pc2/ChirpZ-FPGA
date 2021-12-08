@@ -202,15 +202,15 @@ float2x8 readBuf_store(float2 buf[DEPTH][POINTS], unsigned step){
 
 float2x8 readBuf_fetch(float2 buf[DEPTH][POINTS], unsigned step, unsigned delay){
   unsigned rows = (step + delay);
-  unsigned base = (rows & (N / POINTS - 1)) << LOGN; // 0, N, 2N, ...
-  unsigned offset = (rows >> LOGN) & ((N / 8) - 1);  // 0, .. N / POINTS
+  unsigned base = (rows & (NEAREST_POW_OF_2 / POINTS - 1)) << LOGM; // 0, N, 2N, ...
+  unsigned offset = (rows >> LOGM) & ((NEAREST_POW_OF_2 / 8) - 1);  // 0, .. N / POINTS
 
   float2 rotate_out[POINTS];
   float2x8 data;
 
   #pragma unroll POINTS
   for(unsigned i = 0; i < POINTS; i++){
-    unsigned rot = ((POINTS + i - (rows >> (LOGN - LOGPOINTS))) << (LOGN - LOGPOINTS)) & (N - 1);
+    unsigned rot = ((POINTS + i - (rows >> (LOGM - LOGPOINTS))) << (LOGM - LOGPOINTS)) & (NEAREST_POW_OF_2 - 1);
     unsigned row_rotate = (base + offset + rot);
     rotate_out[i] = buf[row_rotate][i];
   }

@@ -96,6 +96,19 @@ extern fpga_t fftfpgaf_c2c_chirp1d(const unsigned N, const float2 *inp, float2 *
  */
 extern fpga_t fftfpgaf_c2c_chirp2d_bram(const unsigned N, const float2 *inp, float2 *out, const bool inv, const unsigned batch);
 
+extern fpga_t fftfpgaf_c2c_chirp2d_bram_v2(const unsigned N, const float2 *inp, float2 *out, const bool inv, const unsigned batch);
+
+/**
+ * \brief  compute an out-of-place single precision complex 3D-FFT on the FPGA
+ * \param  N    : unsigned integer to the number of points in FFT1d  
+ * \param  inp  : float2 pointer to input data of size N
+ * \param  out  : float2 pointer to output data of size N
+ * \param  inv  : toggle for backward transforms
+ * \param  batch : number of batched executions of 3D FFT
+ * \return fpga_t : time taken in milliseconds for data transfers and execution
+ */
+fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, const bool inv, const unsigned batch);
+
 #ifdef __cplusplus
 }
 #endif
