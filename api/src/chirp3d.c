@@ -161,23 +161,19 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   int inverse = 0;
   cl_kernel kernel_fft1d_1 = clCreateKernel(program, "fft1d_1", &status);
   checkError(status, "Failed to create fft1d_1 kernel");
-  status = clSetKernelArg(kernel_fft1d_1, 0, sizeof(cl_mem), (void *)&d_Filter_fourier);
+  status = clSetKernelArg(kernel_fft1d_1, 0, sizeof(cl_uint),(void *)&isFilter);
   checkError(status, "Failed to set kernel fft1d_1 arg 0"); 
-  status = clSetKernelArg(kernel_fft1d_1, 1, sizeof(cl_uint),(void *)&isFilter);
+  status = clSetKernelArg(kernel_fft1d_1, 1, sizeof(cl_uint), (void *)&fft1d_1_count);
   checkError(status, "Failed to set kernel fft1d_1 arg 1"); 
-  status = clSetKernelArg(kernel_fft1d_1, 2, sizeof(cl_uint), (void *)&fft1d_1_count);
+  status = clSetKernelArg(kernel_fft1d_1, 2, sizeof(cl_int), (void *)&inverse);
   checkError(status, "Failed to set kernel fft1d_1 arg 2"); 
-  status = clSetKernelArg(kernel_fft1d_1, 3, sizeof(cl_int), (void *)&inverse);
-  checkError(status, "Failed to set kernel fft1d_1 arg 3"); 
 
   unsigned total_mult1_count = batch * next_num * next_num;
   // Filter is stored in BRAM, then multiplied with count * signals 
   cl_kernel kernel_mult1 = clCreateKernel(program, "multiplication1", &status);
   checkError(status, "Failed to create multiplication1 kernel");
-  status = clSetKernelArg(kernel_mult1, 0, sizeof(cl_mem), (void *)&d_Filter_fourier);
+  status = clSetKernelArg(kernel_mult1, 0, sizeof(cl_uint), (void *)&total_mult1_count);
   checkError(status, "Failed to set kernel mult1 arg 0"); 
-  status = clSetKernelArg(kernel_mult1, 1, sizeof(cl_uint), (void *)&total_mult1_count);
-  checkError(status, "Failed to set kernel mult1 arg 1"); 
  
   // Arguments for Signal Transformation
   int inverse_sig = 1;
@@ -235,10 +231,8 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   // Filter is stored in BRAM, then multiplied with count * signals 
   cl_kernel kernel_mult2 = clCreateKernel(program, "multiplication2", &status);
   checkError(status, "Failed to create multiplication2 kernel");
-  status = clSetKernelArg(kernel_mult2, 0, sizeof(cl_mem), (void *)&d_Filter_fourier);
+  status = clSetKernelArg(kernel_mult2, 0, sizeof(cl_uint), (void *)&mult2_count);
   checkError(status, "Failed to set kernel mult2 arg 0"); 
-  status = clSetKernelArg(kernel_mult2, 1, sizeof(cl_uint), (void *)&mult2_count);
-  checkError(status, "Failed to set kernel mult2 arg 1"); 
 
   inverse_sig = 1;
   unsigned ifft1d_2_count = batch * next_num * next_num;
@@ -276,16 +270,6 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   status = clSetKernelArg(kernel_trans3D, 3, sizeof(cl_uint), (void *)&mode);
   checkError(status, "Failed to set kernel transpose3D arg 3"); 
 
-  /*
-  unsigned mod3_count = batch * next_num * next_num;
-  cl_kernel kernel_mod3 = clCreateKernel(program, "modulate3", &status);
-  checkError(status, "Failed to create modulate3 kernel");
-  status = clSetKernelArg(kernel_mod3, 0, sizeof(cl_mem), (void *)&d_Out);
-  checkError(status, "Failed to set kernel modulate3 arg 0");
-  status = clSetKernelArg(kernel_mod3, 1, sizeof(cl_uint), (void *)&mod3_count);
-  checkError(status, "Failed to set kernel modulate3 arg 1"); 
-  */
-
   unsigned mod3_count = batch * next_num * next_num;
   cl_kernel kernel_mod3 = clCreateKernel(program, "modulate3", &status);
   checkError(status, "Failed to create modulate3 kernel");
@@ -307,10 +291,8 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   // Filter is stored in BRAM, then multiplied with count * signals 
   cl_kernel kernel_mult3 = clCreateKernel(program, "multiplication3", &status);
   checkError(status, "Failed to create multiplication3 kernel");
-  status = clSetKernelArg(kernel_mult3, 0, sizeof(cl_mem), (void *)&d_Filter_fourier);
+  status = clSetKernelArg(kernel_mult3, 0, sizeof(cl_uint), (void *)&mult3_count);
   checkError(status, "Failed to set kernel mult3 arg 0"); 
-  status = clSetKernelArg(kernel_mult3, 1, sizeof(cl_uint), (void *)&mult3_count);
-  checkError(status, "Failed to set kernel mult3 arg 1"); 
 
   inverse_sig = 1;
   unsigned ifft1d_3_count = batch * next_num * next_num;
@@ -363,6 +345,36 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   status = clEnqueueTask(queue2, kernel_fetch, 0, NULL, &startFilter_event);
   checkError(status, "Failed to launch fetch kernel");
 
+  // early starting signal kernels
+
+  status = clEnqueueTask(queue17, kernel_mult3, 0, NULL, NULL);
+  checkError(status, "Failed to launch multiplication3 kernel");
+
+  status = clEnqueueTask(queue16, kernel_trans3D, 0, NULL, NULL);
+  checkError(status, "Failed to launch transpose3D kernel");
+  status = clEnqueueTask(queue15, kernel_demod2, 0, NULL, NULL);
+  checkError(status, "Failed to launch demod2 kernel");
+  status = clEnqueueTask(queue14, kernel_scale2, 0, NULL, NULL);
+  checkError(status, "Failed to launch scale2 kernel");
+  status = clEnqueueTask(queue13, kernel_ifft1d_2, 0, NULL, NULL);
+  checkError(status, "Failed to launch ifft1d_2 kernel");
+  status = clEnqueueTask(queue12, kernel_mult2, 0, NULL, NULL);
+  checkError(status, "Failed to launch multiplication 2 kernel");
+  status = clEnqueueTask(queue11, kernel_fft1d_2, 0, NULL, NULL);
+  checkError(status, "Failed to launch fft1d_2 kernel");
+  status = clEnqueueTask(queue10, kernel_mod2, 0, NULL, NULL);
+  checkError(status, "Failed to launch mod2 kernel");
+  status = clEnqueueTask(queue9, kernel_transpose, 0, NULL, NULL);
+  checkError(status, "Failed to launch transpose kernel");
+  status = clEnqueueTask(queue8, kernel_demod1, 0, NULL, NULL);
+  checkError(status, "Failed to launch demod kernel");
+  status = clEnqueueTask(queue7, kernel_scale1, 0, NULL, NULL);
+  checkError(status, "Failed to launch scale1 kernel");
+  status = clEnqueueTask(queue6, kernel_ifft1d_1, 0, NULL, NULL);
+  checkError(status, "Failed to launch ifft1d_1 kernel");
+  status = clEnqueueTask(queue5, kernel_mult1, 0, NULL, NULL);
+  checkError(status, "Failed to launch multiplication kernel");
+
   // fft1d and mult continue to process the signal data also
   status = clFinish(queue4);
   checkError(status, "Failed to finish queue4");
@@ -398,42 +410,17 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   fft1d_1_count = batch * next_num * next_num;
   isFilter = 0;
   inverse = 0;
-  kernel_fft1d_1 = clCreateKernel(program, "fft1d_1", &status);
-  checkError(status, "Failed to create fft1d_1 kernel");
-  status = clSetKernelArg(kernel_fft1d_1, 0, sizeof(cl_mem), (void *)&d_Filter_fourier);
+  //kernel_fft1d_1 = clCreateKernel(program, "fft1d_1", &status);
+  //checkError(status, "Failed to create fft1d_1 kernel");
+  status = clSetKernelArg(kernel_fft1d_1, 0, sizeof(cl_uint),(void *)&isFilter);
   checkError(status, "Failed to set kernel fft1d_1 arg 0"); 
-  status = clSetKernelArg(kernel_fft1d_1, 1, sizeof(cl_uint),(void *)&isFilter);
+  status = clSetKernelArg(kernel_fft1d_1, 1, sizeof(cl_uint), (void *)&fft1d_1_count);
   checkError(status, "Failed to set kernel fft1d_1 arg 1"); 
-  status = clSetKernelArg(kernel_fft1d_1, 2, sizeof(cl_uint), (void *)&fft1d_1_count);
-  checkError(status, "Failed to set kernel fft1d_1 arg 2"); 
-  status = clSetKernelArg(kernel_fft1d_1, 3, sizeof(cl_int), (void *)&inverse);
-  checkError(status, "Failed to set kernel fft1d_1 arg 3");
+  status = clSetKernelArg(kernel_fft1d_1, 2, sizeof(cl_int), (void *)&inverse);
+  checkError(status, "Failed to set kernel fft1d_1 arg 2");
 
   // Queues 4,5,7 are occupied by FFT1da, mult and demod kernels respectively
-  status = clEnqueueTask(queue15, kernel_trans3D, 0, NULL, NULL);
-  checkError(status, "Failed to launch transpose3D kernel");
-  status = clEnqueueTask(queue14, kernel_demod2, 0, NULL, NULL);
-  checkError(status, "Failed to launch demod2 kernel");
-  status = clEnqueueTask(queue13, kernel_scale2, 0, NULL, NULL);
-  checkError(status, "Failed to launch scale2 kernel");
-  status = clEnqueueTask(queue12, kernel_ifft1d_2, 0, NULL, NULL);
-  checkError(status, "Failed to launch ifft1d_2 kernel");
-  status = clEnqueueTask(queue11, kernel_mult2, 0, NULL, NULL);
-  checkError(status, "Failed to launch multiplication 2 kernel");
-  status = clEnqueueTask(queue10, kernel_fft1d_2, 0, NULL, NULL);
-  checkError(status, "Failed to launch fft1d_2 kernel");
-  status = clEnqueueTask(queue9, kernel_mod2, 0, NULL, NULL);
-  checkError(status, "Failed to launch mod2 kernel");
-  status = clEnqueueTask(queue8, kernel_transpose, 0, NULL, NULL);
-  checkError(status, "Failed to launch transpose kernel");
-  status = clEnqueueTask(queue7, kernel_demod1, 0, NULL, NULL);
-  checkError(status, "Failed to launch demod kernel");
-  status = clEnqueueTask(queue6, kernel_scale1, 0, NULL, NULL);
-  checkError(status, "Failed to launch scale1 kernel");
-  status = clEnqueueTask(queue5, kernel_ifft1d_1, 0, NULL, NULL);
-  checkError(status, "Failed to launch ifft1d_1 kernel");
-  status = clEnqueueTask(queue4, kernel_mult1, 0, NULL, NULL);
-  checkError(status, "Failed to launch multiplication kernel");
+
   status = clEnqueueTask(queue3, kernel_fft1d_1, 0, NULL, NULL);
   checkError(status, "Failed to launch fft1d_1 kernel");
   status = clEnqueueTask(queue2, kernel_mod1, 0, NULL, NULL);
@@ -441,6 +428,8 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   status = clEnqueueTask(queue1, kernel_fetch, 0, NULL, &startSignal_event);
   checkError(status, "Failed to launch ifft kernel");
   
+  status = clFinish(queue16);
+  checkError(status, "Failed to finish queue16");
   status = clFinish(queue15);
   checkError(status, "Failed to finish queue15");
   status = clFinish(queue14);
@@ -490,8 +479,6 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   checkError(status, "Failed to launch scale2 kernel");
   status = clEnqueueTask(queue6, kernel_ifft1d_3, 0, NULL, NULL);
   checkError(status, "Failed to launch ifft1d_2 kernel");
-  status = clEnqueueTask(queue5, kernel_mult3, 0, NULL, NULL);
-  checkError(status, "Failed to launch multiplication 2 kernel");
   status = clEnqueueTask(queue4, kernel_fft1d_3, 0, NULL, NULL);
   checkError(status, "Failed to launch fft1d_2 kernel");
   status = clEnqueueTask(queue3, kernel_mod3, 0, NULL, NULL);
@@ -499,6 +486,8 @@ fpga_t fftfpgaf_c2c_chirp3d(const unsigned num, const float2 *inp, float2 *out, 
   status = clEnqueueTask(queue2, kernel_trans3D, 0, NULL, NULL);
   checkError(status, "Failed to launch transpose3D kernel");
 
+  status = clFinish(queue17);
+  checkError(status, "failed to finish reading buffer using PCIe");
   status = clFinish(queue9);
   checkError(status, "failed to finish reading buffer using PCIe");
   status = clFinish(queue8);

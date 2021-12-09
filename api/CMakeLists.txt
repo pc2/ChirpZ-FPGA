@@ -14,7 +14,6 @@ add_library(chirpzfpga STATIC
               ${PROJECT_SOURCE_DIR}/src/chirp2d.c
               ${PROJECT_SOURCE_DIR}/src/chirp2d_v2.c
               ${PROJECT_SOURCE_DIR}/src/chirp3d.c
-              ${PROJECT_SOURCE_DIR}/src/chirp3d_v2.c
               ${PROJECT_SOURCE_DIR}/src/svm.c
               ${PROJECT_SOURCE_DIR}/src/opencl_utils.c
               ${PROJECT_SOURCE_DIR}/src/misc.c)

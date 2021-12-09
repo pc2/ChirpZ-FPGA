@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.18)
 #   - ${kernel_name}_syn: to generate synthesis binary
 ##
 set(CL_PATH "${chirpz-kernels_SOURCE_DIR}/chirp3d")
-set(kernels chirp3d chirp3d_v2)
+set(kernels chirp3d)
 
 include(${chirpz_SOURCE_DIR}/cmake/genKernelTargets.cmake)
 

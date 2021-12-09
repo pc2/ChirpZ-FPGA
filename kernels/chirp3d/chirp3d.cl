@@ -31,6 +31,10 @@ channel float2 chaninifft3[POINTS];
 channel float2 chaninscale3[POINTS]; 
 channel float2 chanindemod3[POINTS]; 
 channel float2 chaninStore[POINTS]; 
+
+channel float2 chaninmult1_filter[POINTS]; 
+channel float2 chaninmult2_filter[POINTS]; 
+channel float2 chaninmult3_filter[POINTS]; 
 /*
  * \brief Reverse the 8 point complex array
  * \ret   8 point complex array that is reversed
@@ -263,7 +267,6 @@ kernel void modulate1(
 }
 
 kernel void fft1d_1(
-  global volatile float2 * restrict dest, // storing the filter
   unsigned int isFilter,    // toggle if filter
   unsigned int count,       // number of FFTs
   unsigned int inverse) {   // set to 1 for iFFT
@@ -323,6 +326,33 @@ kernel void fft1d_1(
     if (i >= N / 8 - 1) {
       if(isFilter == 1){
         unsigned index = (i - ((N / 8) - 1)) * 8;
+                write_channel_intel(chaninmult1_filter[0], data.i0);
+        write_channel_intel(chaninmult1_filter[1], data.i1);
+        write_channel_intel(chaninmult1_filter[2], data.i2);
+        write_channel_intel(chaninmult1_filter[3], data.i3);
+        write_channel_intel(chaninmult1_filter[4], data.i4);
+        write_channel_intel(chaninmult1_filter[5], data.i5);
+        write_channel_intel(chaninmult1_filter[6], data.i6);
+        write_channel_intel(chaninmult1_filter[7], data.i7);
+
+        write_channel_intel(chaninmult2_filter[0], data.i0);
+        write_channel_intel(chaninmult2_filter[1], data.i1);
+        write_channel_intel(chaninmult2_filter[2], data.i2);
+        write_channel_intel(chaninmult2_filter[3], data.i3);
+        write_channel_intel(chaninmult2_filter[4], data.i4);
+        write_channel_intel(chaninmult2_filter[5], data.i5);
+        write_channel_intel(chaninmult2_filter[6], data.i6);
+        write_channel_intel(chaninmult2_filter[7], data.i7);
+
+        write_channel_intel(chaninmult3_filter[0], data.i0);
+        write_channel_intel(chaninmult3_filter[1], data.i1);
+        write_channel_intel(chaninmult3_filter[2], data.i2);
+        write_channel_intel(chaninmult3_filter[3], data.i3);
+        write_channel_intel(chaninmult3_filter[4], data.i4);
+        write_channel_intel(chaninmult3_filter[5], data.i5);
+        write_channel_intel(chaninmult3_filter[6], data.i6);
+        write_channel_intel(chaninmult3_filter[7], data.i7);
+        /*
         dest[index + 0] = data.i0;
         dest[index + 1] = data.i1;
         dest[index + 2] = data.i2;
@@ -331,6 +361,7 @@ kernel void fft1d_1(
         dest[index + 5] = data.i5;
         dest[index + 6] = data.i6;
         dest[index + 7] = data.i7;
+        */
       }
       if(isFilter == 0){
         write_channel_intel(chaninmult1[0], data.i0);
@@ -352,7 +383,6 @@ kernel void fft1d_1(
  *        hence the signal is multiplied before stored back in normal order
  */
 kernel void multiplication1(
-  global volatile float2 * restrict filter,  // pointer to Filter in DDR
   unsigned int count){                       // number of iterations
 
   unsigned chirp_num = NEAREST_POW_OF_2 + NEAREST_POW_OF_2;
@@ -362,7 +392,7 @@ kernel void multiplication1(
   for(unsigned step = 0; step < (chirp_num / 8); step++){
     #pragma unroll 8
     for(unsigned i = 0; i < 8; i++){
-      filter_bitrev[(step * 8) + i] = filter[(step * 8) + i];
+      filter_bitrev[(step * 8) + i] = read_channel_intel(chaninmult1_filter[i]);
     }
   }
 
@@ -803,16 +833,19 @@ kernel void fft1d_2(
  *        hence the signal is multiplied before stored back in normal order
  */
 kernel void multiplication2(
-  global volatile float2 * restrict filter,  // pointer to Filter in DDR
   unsigned int count){ // number of iterations
 
   unsigned chirp_num = NEAREST_POW_OF_2 + NEAREST_POW_OF_2;
   float2 filter_bitrev[NEAREST_POW_OF_2 + NEAREST_POW_OF_2];
 
   // Store Filter in BRAM
-  #pragma unroll 8
-  for(unsigned step = 0; step < chirp_num; step++){
-    filter_bitrev[step] = filter[step];
+  for(unsigned step = 0; step < chirp_num / 8; step++){
+
+    #pragma unroll 8
+    for(unsigned i = 0; i < 8; i++){
+      filter_bitrev[(step * 8) + i] = read_channel_intel(chaninmult2_filter[i]);
+    }
+    //filter_bitrev[step] = filter[step];
   }
 
   for(unsigned row = 0; row < count; row++){
@@ -1310,17 +1343,21 @@ kernel void fft1d_3(
  *        hence the signal is multiplied before stored back in normal order
  */
 kernel void multiplication3(
-  global volatile float2 * restrict filter,  // pointer to Filter in DDR
   unsigned int count){ // number of iterations
 
   unsigned chirp_num = NEAREST_POW_OF_2 + NEAREST_POW_OF_2;
   float2 filter_bitrev[NEAREST_POW_OF_2 + NEAREST_POW_OF_2];
 
   // Store Filter in BRAM
-  #pragma unroll 8
-  for(unsigned step = 0; step < chirp_num; step++){
-    filter_bitrev[step] = filter[step];
+  for(unsigned step = 0; step < chirp_num / 8; step++){
+
+    #pragma unroll 8
+    for(unsigned i = 0; i < 8; i++){
+      filter_bitrev[(step * 8) + i] = read_channel_intel(chaninmult3_filter[i]);
+    }
+    //filter_bitrev[step] = filter[step];
   }
+
 
   for(unsigned row = 0; row < count; row++){
 
